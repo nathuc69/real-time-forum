@@ -15,9 +15,15 @@ type User struct {
 type ClientRepository interface {
 	ClientLog(username, email string) (*User, bool)
 	CreateClient(user *User) error
+	UpdateTokenRepo(username, email, token string) error
+	CheckTokenRepo(token string) (*User, bool)
+	DeleteTokenRepo(token string) error
 }
 
 type ClientService interface {
 	Authentification(username, email, password string) (*User, bool)
 	Register(user *User) error
+	UpdateTokenService(username, email, token string) error
+	CheckTokenService(token string) (*User, bool)
+	DeleteTokenService(token string) error
 }

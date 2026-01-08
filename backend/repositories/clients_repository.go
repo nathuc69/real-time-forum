@@ -39,6 +39,43 @@ func (r *LogRepo) ClientLog(username, email string) (*domain.User, bool) {
 	return user, true
 }
 
+func (r *LogRepo) UpdateTokenRepo(username, email, token string) error {
+	_, err := r.db.Exec(`
+		UPDATE users 
+		SET token = ? 
+		WHERE username = ? OR email = ?`, token, username, email)
+	if err != nil {
+		return fmt.Errorf("❌ error updating token: %w", err)
+	}
+	return nil
+}
+
+func (r *LogRepo) CheckTokenRepo(token string) (*domain.User, bool) {
+	user := &domain.User{}
+
+	err := r.db.QueryRow(`SELECT userName, email, id FROM users WHERE token = ?`, token).Scan(&user.Username, &user.Email, &user.ID)
+	if err == sql.ErrNoRows {
+		fmt.Println("❌ no user found with given token")
+		return nil, false
+	} else if err != nil {
+		fmt.Println("Erreur SQL:", err)
+		return nil, false
+	}
+
+	return user, true
+}
+
+func (r *LogRepo) DeleteTokenRepo(token string) error {
+	_, err := r.db.Exec(`
+		UPDATE users 
+		SET token = NULL 
+		WHERE token = ?`, token)
+	if err != nil {
+		return fmt.Errorf("❌ error deleting token: %w", err)
+	}
+	return nil
+}
+
 func (r *LogRepo) CreateClient(user *domain.User) error {
 	_, err := r.db.Exec(`
 		INSERT INTO users (username, password, email, age, firstName, lastName, gender)

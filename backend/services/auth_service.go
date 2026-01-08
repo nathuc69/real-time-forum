@@ -21,8 +21,6 @@ func (s *clientService) Authentification(username, email, password string) (*dom
 		return nil, false
 	}
 	// Ici, vous pouvez ajouter la vérification du mot de passe si nécessaire
-	fmt.Println(user)
-	fmt.Println(username, email, password)
 	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		fmt.Println("❌ invalid password")
@@ -42,6 +40,29 @@ func (s *clientService) Register(user *domain.User) error {
 	err = s.repo.CreateClient(user)
 	if err != nil {
 		return fmt.Errorf("❌ error creating user: %w", err)
+	}
+	return nil
+}
+func (s *clientService) UpdateTokenService(username, email, token string) error {
+	err := s.repo.UpdateTokenRepo(username, email, token)
+	if err != nil {
+		return fmt.Errorf("❌ error updating token in service: %w", err)
+	}
+	return nil
+}
+
+func (s *clientService) CheckTokenService(token string) (*domain.User, bool) {
+	user, found := s.repo.CheckTokenRepo(token)
+	if !found {
+		return nil, false
+	}
+	return user, true
+}
+
+func (s *clientService) DeleteTokenService(token string) error {
+	err := s.repo.DeleteTokenRepo(token)
+	if err != nil {
+		return fmt.Errorf("❌ error deleting token in service: %w", err)
 	}
 	return nil
 }

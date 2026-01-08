@@ -1,4 +1,6 @@
 // Page rendering functions
+import { setupEventListeners } from './login.js';
+
 export function renderHome() {
     document.body.innerHTML = `
         <div id="MenuPage">
@@ -20,7 +22,7 @@ export function renderLogin() {
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" autocomplete="on" required>
                 
-                <button type="submit">Login</button>
+                <button id="SubmitLogin" type="submit">Login</button>
                 
                 <label for="register">New user?</label>
                 <button id="registerBtn" type="button">Register</button>
@@ -28,6 +30,7 @@ export function renderLogin() {
             </form>
         </div>
     `;
+    setupEventListeners();
 }
 
 export function renderRegister() {
@@ -60,9 +63,10 @@ export function renderRegister() {
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
                 
-                <button id="SubmitRegister"type="submit">Register</button>
+                <button id="SubmitRegister" type="submit">Register</button>
                 <button id="backBtn" type="button">Back to Home</button>
             </form>
         </div>
     `;
+    setupEventListeners();
 }

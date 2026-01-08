@@ -47,11 +47,20 @@ export function EventLoginBtn(){
     });
 }
 
-addEventListener('submit', handleLogin);
+export function setupEventListeners() {
+    const submitLoginBtn = document.getElementById("SubmitLogin");
+    const submitRegisterBtn = document.getElementById("SubmitRegister");
+    
+    if (submitLoginBtn) {
+        submitLoginBtn.addEventListener("click", handleLogin);
+    }
+    if (submitRegisterBtn) {
+        submitRegisterBtn.addEventListener("click", handleRegister);
+    }
+}
 
-export async function handleLogin() {
-    const SubmitBtnLogin = document.getElementById("SubmitLogin");
-    SubmitBtnLogin.preventDefault();
+export async function handleLogin(e) {
+    e.preventDefault();
 
     const usernameVal = document.getElementById("username").value;
     if (usernameVal.includes("@")) {
@@ -64,12 +73,13 @@ export async function handleLogin() {
     const password = document.getElementById("password").value;
 
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch('http://localhost:8086/api/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({ username, email, password }),
+            credentials: 'include',
         });
 
         if (response.ok) {
@@ -86,23 +96,26 @@ export async function handleLogin() {
     }
 }
 
-export async function handleRegister() {
-    const SubmitBtnRegister = document.getElementById("SubmitRegister");
-    SubmitBtnRegister.preventDefault();
+export async function handleRegister(e) {
+    e.preventDefault();
 
     const username = document.getElementById("username").value;
     const email = document.getElementById("email").value;
     const age = document.getElementById("age").value;
     const firstName = document.getElementById("firstName").value;
     const lastName = document.getElementById("lastName").value
+    const password = document.getElementById("password").value;
+    const Gender = document.getElementById("gender").value;
 
     try {
-        const response = await fetch('/api/register', {
+
+        const response = await fetch('http://localhost:8086/api/register', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, email, age, firstName, lastName }),
+            body: JSON.stringify({ username, email, age: Number(age), firstName, lastName , Gender, password  }),
+            credentials: 'include',
         });
 
         if (response.ok) {

@@ -1,10 +1,13 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"real-time-forum/backend/domain"
+	"time"
 )
 
 var clientService domain.ClientService
@@ -35,10 +38,36 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		fmt.Println("❌ error generating token ")
+	}
+
+	sessionToken := base64.URLEncoding.EncodeToString(bytes)
+	fmt.Println(sessionToken)
+
+	// SetCookie AVANT WriteHeader (important !)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    sessionToken,
+		Path:     "/",
+		Expires:  time.Now().Add(1 * time.Hour),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		// Secure: true,  // À activer quand vous passerez en HTTPS
+	})
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(NewUser)
 
-	fmt.Println(NewUser)
+	err = clientService.UpdateTokenService(NewUser.Username, NewUser.Email, sessionToken)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println("connected user:", NewUser.Email, NewUser.Username)
+	//http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
