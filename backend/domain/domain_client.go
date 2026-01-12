@@ -10,6 +10,7 @@ type User struct {
 	LastName  string `json:"lastName"`
 	Gender    string `json:"gender"`
 	Error     string `json:"error"`
+	IsLogged  bool   `json:"isLogged"`
 }
 
 type ClientRepository interface {
@@ -24,6 +25,6 @@ type ClientService interface {
 	Authentification(username, email, password string) (*User, bool)
 	Register(user *User) error
 	UpdateTokenService(username, email, token string) error
-	CheckTokenService(token string) (*User, bool)
+	CheckTokenService(token string) (*User, error)
 	DeleteTokenService(token string) error
 }

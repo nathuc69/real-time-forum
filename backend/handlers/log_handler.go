@@ -12,6 +12,10 @@ import (
 
 var clientService domain.ClientService
 
+func SetClientService(cs domain.ClientService) {
+	clientService = cs
+}
+
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
@@ -99,4 +103,43 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(NewUser)
 	fmt.Println("User registered:", NewUser)
+}
+
+func CheckAuthHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Vérifier le cookie de session
+	cookie, err := r.Cookie("session_token")
+	if err != nil || cookie.Value == "" {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": false,
+			"message":       "No session found",
+		})
+		return
+	}
+
+	// Valider le token
+	user, err := clientService.CheckTokenService(cookie.Value)
+	if err != nil || user == nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"authenticated": false,
+			"message":       "Invalid or expired session",
+		})
+		return
+	}
+
+	// Session valide
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"authenticated": true,
+		"username":      user.Username,
+		"email":         user.Email,
+	})
 }

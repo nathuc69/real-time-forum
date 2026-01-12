@@ -51,12 +51,12 @@ func (s *clientService) UpdateTokenService(username, email, token string) error 
 	return nil
 }
 
-func (s *clientService) CheckTokenService(token string) (*domain.User, bool) {
+func (s *clientService) CheckTokenService(token string) (*domain.User, error) {
 	user, found := s.repo.CheckTokenRepo(token)
 	if !found {
-		return nil, false
+		return nil, fmt.Errorf("token not found")
 	}
-	return user, true
+	return user, nil
 }
 
 func (s *clientService) DeleteTokenService(token string) error {

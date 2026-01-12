@@ -1,43 +1,24 @@
-// function LoginDOM(){
-//     const LoginMenu = document.createElement("div");
-//     LoginMenu.id = "loginMenu";
-
-//     const loginForm = document.createElement("form");
-//     loginForm.id = "loginForm";
-
-//     const usernameInput = document.createElement("input");
-//     usernameInput.type = "text";
-//     usernameInput.id = "usernameInput";
-//     usernameInput.placeholder = "Username";
-
-//     const passwordInput = document.createElement("input");
-//     passwordInput.type = "password";
-//     passwordInput.id = "passwordInput";
-//     passwordInput.placeholder = "Password";
-
-//     const loginBtn = document.createElement("button");
-//     loginBtn.type = "submit";
-//     loginBtn.id = "loginBtn";
-//     loginBtn.innerText = "Login";
-
-//     loginForm.appendChild(usernameInput);
-//     loginForm.appendChild(passwordInput);
-//     loginForm.appendChild(loginBtn);
-
-//     LoginMenu.appendChild(loginForm);
-
-//     document.body.appendChild(LoginMenu);   
-//     console.log("Login DOM created"); 
-// }
+import {navigateTo } from './router.js';
 export function EventLoginBtn(){
     const loginBtn = document.getElementById("loginBtn");
     const loginMenu = document.getElementById("loginMenu");
     const menu = document.getElementById("MenuPage");
+    const logoutPopup = document.getElementById("logoutPopup");
+    const logoutBtn = document.getElementById("LogoutBtn");
 
     if (!loginBtn || !loginMenu) {
         console.error("Login button or menu not found in DOM");
         return;
     }
+
+    logoutBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const logoutPopupElement = document.getElementById("logoutPopup");
+        const logoutOverlay = document.getElementById("logoutOverlay");
+        logoutOverlay.style.display = "block";
+        logoutPopupElement.style.display = "block";
+        console.log("Logout button clicked");
+    });
 
     loginBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -50,12 +31,27 @@ export function EventLoginBtn(){
 export function setupEventListeners() {
     const submitLoginBtn = document.getElementById("SubmitLogin");
     const submitRegisterBtn = document.getElementById("SubmitRegister");
+    const SubmitLogoutBtn = document.getElementById("SubmitLogoutBtn");
+    const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
     
     if (submitLoginBtn) {
         submitLoginBtn.addEventListener("click", handleLogin);
     }
     if (submitRegisterBtn) {
         submitRegisterBtn.addEventListener("click", handleRegister);
+    }
+    if (SubmitLogoutBtn) {
+        SubmitLogoutBtn.addEventListener("click", handleLogout);
+    }
+    if (cancelLogoutBtn) {
+        cancelLogoutBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const logoutPopupElement = document.getElementById("logoutPopup");
+            const logoutOverlay = document.getElementById("logoutOverlay");
+            logoutPopupElement.style.display = "none";
+            logoutOverlay.style.display = "none";
+            navigateTo('/');
+        });
     }
 }
 
@@ -82,10 +78,12 @@ export async function handleLogin(e) {
             credentials: 'include',
         });
 
-        if (response.ok) {
+        if (response.ok) {  
             const data = await response.json();
             console.log('Login successful:', data);
-            // Handle successful login (e.g., redirect, update UI)
+            // Redirect to home and force page reload to update auth state
+            window.location.hash = '#/';
+            window.location.reload();
         } else {
             const errorData = await response.json();
             console.error('Login failed:', errorData);
@@ -131,3 +129,6 @@ export async function handleRegister(e) {
         console.error('Error during registration:', error);
     }
 }
+
+export async function handleLogout(e) {
+}  

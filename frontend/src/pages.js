@@ -1,7 +1,8 @@
 // Page rendering functions
 import { setupEventListeners } from './login.js';
 
-export function renderHome() {
+export function renderHome(loggedIn, username) {
+    if (!loggedIn) {
     document.body.innerHTML = `
         <div id="MenuPage">
             <h1>Welcome to the Real-Time Forum</h1>
@@ -9,6 +10,21 @@ export function renderHome() {
             <button id="registerBtn">Register</button>
         </div>
     `;
+    } else {
+        document.body.innerHTML = `
+        <div id="logoutOverlay"></div>
+        <div id="MenuPage">
+            <h1>Welcome to the Real-Time Forum, ${username}</h1>
+            <button id="LogoutBtn">Logout</button>
+        </div>
+        <div id="logoutPopup">
+            <h3>Are you sure you want to logout?</h3>
+            <button id="SubmitLogoutBtn">Yes, Logout</button>
+            <button id="cancelLogoutBtn">Cancel</button>
+        </div>
+    `;
+        setupEventListeners();
+    }
 }
 
 export function renderLogin() {
@@ -68,5 +84,14 @@ export function renderRegister() {
             </form>
         </div>
     `;
+    setupEventListeners();
+}
+
+export function PopupLogout(){`
+    <div id="logoutPopup">
+    <h3>Are you sure you want to logout?</h3>
+    <button id="SubmitLogoutBtn">Yes, Logout</button>
+    <button id="cancelLogoutBtn">Cancel</button>
+    </div>`;
     setupEventListeners();
 }
