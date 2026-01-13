@@ -131,4 +131,29 @@ export async function handleRegister(e) {
 }
 
 export async function handleLogout(e) {
-}  
+    e.preventDefault();
+
+    try {
+        const response = await fetch('http://localhost:8086/api/logout', {
+            method: 'POST',
+            credentials: 'include',
+        });
+
+        if (response.ok) {
+            console.log('Logout successful');
+            // Hide the logout popup and overlay
+            const logoutPopupElement = document.getElementById("logoutPopup");
+            const logoutOverlay = document.getElementById("logoutOverlay");
+            logoutPopupElement.style.display = "none";
+            logoutOverlay.style.display = "none";
+            
+            // Redirect to login page
+            window.location.hash = '#/login';
+            window.location.reload();
+        } else {
+            console.error('Logout failed');
+        }
+    } catch (error) {
+        console.error('Error during logout:', error);
+    }
+}

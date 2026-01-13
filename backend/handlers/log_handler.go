@@ -143,3 +143,50 @@ func CheckAuthHandler(w http.ResponseWriter, r *http.Request) {
 		"email":         user.Email,
 	})
 }
+
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// Récupérer le cookie de session
+	cookie, err := r.Cookie("session_token")
+	if err != nil || cookie.Value == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "No session found",
+		})
+		return
+	}
+
+	// Supprimer le token de la base de données
+	err = clientService.DeleteTokenService(cookie.Value)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Error during logout",
+		})
+		fmt.Println(err)
+		return
+	}
+
+	// Effacer le cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		Expires:  time.Now().Add(-1 * time.Hour), // Cookie expiré
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Logout successful",
+	})
+
+	fmt.Println("User logged out")
+}

@@ -27,3 +27,5 @@ INSERT OR IGNORE INTO topic_categories (topic_id, category_id) VALUES
 	(1,3),
 	(2,4);
 
+INSERT OR IGNORE INTO users (username, password, email) VALUES 
+	("nathox96", "$2a$10$weR/WktH5MhF8EU.6XvBFOG1uZHS4/64oL7wof3vrtEmU5t7SlTMK", "nathan240304@gmail.com");

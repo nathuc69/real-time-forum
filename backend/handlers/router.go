@@ -16,6 +16,7 @@ func Router(cs domain.ClientService) http.Handler {
 	mux.Handle("/api/login", middleware.CORS(http.HandlerFunc(LoginHandler)))
 	mux.Handle("/api/register", middleware.CORS(http.HandlerFunc(RegisterHandler)))
 	mux.Handle("/api/check-auth", middleware.CORS(http.HandlerFunc(CheckAuthHandler)))
+	mux.Handle("/api/logout", middleware.CORS(http.HandlerFunc(LogoutHandler)))
 
 	// Routes:
 	// mux.Handle("/thread", middleware.Handle(http.HandlerFunc(ThreadHandler)))

@@ -24,9 +24,9 @@ async function checkAuthentication() {
             console.log('❌ Pas de session active');
             // Rediriger vers la page de login si pas sur une page publique
             const currentPath = window.location.hash.replace('#', '') || '/';
-            if (currentPath !== '/login' && currentPath !== '/register') {
-                navigateTo('/login');
-            }
+            // if (currentPath !== '/login' && currentPath !== '/register') {
+            //     navigateTo('/login');
+            // }
             return false;
         }
     } catch (error) {
