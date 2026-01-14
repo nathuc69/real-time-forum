@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS categories (
 	name TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS topics (
+CREATE TABLE IF NOT EXISTS posts (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	title TEXT NOT NULL,
 	content TEXT NOT NULL,
@@ -30,15 +30,15 @@ CREATE TABLE IF NOT EXISTS topics (
 	FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS posts (
+CREATE TABLE IF NOT EXISTS comments (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
 	content TEXT NOT NULL,
 	created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-	topic_id INTEGER NOT NULL,
+	post_id INTEGER NOT NULL,
 	user_id INTEGER NOT NULL,
-	UNIQUE(content, topic_id, user_id),
-	FOREIGN KEY (topic_id) REFERENCES topics(id),
+	UNIQUE(content, post_id, user_id),
+	FOREIGN KEY (post_id) REFERENCES posts(id),
 	FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -54,19 +54,8 @@ CREATE TABLE IF NOT EXISTS reactions (
 	FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS topic_categories (
-    topic_id INT REFERENCES topics(id) ON DELETE CASCADE,
+CREATE TABLE IF NOT EXISTS posts_categories (
+    post_id INT REFERENCES posts(id) ON DELETE CASCADE,
     category_id INT REFERENCES categories(id) ON DELETE CASCADE,
-    PRIMARY KEY (topic_id, category_id)
+    PRIMARY KEY (post_id, category_id)
 );
-
-/*CREATE TABLE IF NOT EXISTS signalements (
-	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	objets TEXT NOT NULL,
-	content TEXT NOT NULL,
-	target_type TEXT NOT NULL CHECK(target_type IN ('topics','posts')),
-	target_id INTEGER NOT NULL,
-	id_user INTEGER NOT NULL,
-	id_mod INTEGER NOT NULL,
-	statu TEXT NOT NULL CHECK(statu IN IN ('new', 'done')),
-)*/

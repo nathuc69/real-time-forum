@@ -25,13 +25,15 @@ func main() {
 	defer db.Close()
 
 	clientRepository := repositories.NewLogRepository(db)
-
 	clientService := services.NewAuthService(clientRepository)
 
-	// photosRepository := repository.NewPhotosRepository(db)
-	// photosServices := service.NewPhotosService(photosRepository)
+	commentsRepository := repositories.NewCommentsRepository(db)
+	commentsService := services.NewCommentsService(commentsRepository)
 
-	router := handlers.Router(clientService)
+	postsRepository := repositories.NewPostsRepository(db)
+	postsService := services.NewPostsService(postsRepository)
+
+	router := handlers.Router(clientService, postsService, commentsService)
 	addr := os.Getenv("SERVER_PORT")
 	//router := SetupRouter(db)
 

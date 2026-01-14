@@ -61,8 +61,9 @@ func HandleAuth(next http.Handler) http.Handler {
 
 		client.IsLogged = true
 
-		// Stocker l'utilisateur dans le contexte
+		// Stocker l'utilisateur et son ID dans le contexte
 		ctx := context.WithValue(r.Context(), "user", client)
+		ctx = context.WithValue(ctx, "userID", client.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

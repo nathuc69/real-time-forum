@@ -10,17 +10,15 @@ C’est comme un sommaire dans un livre
 CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_email ON users(email);
 
--- Index sur les sujets
-CREATE INDEX idx_topics_user ON topics(user_id);
-
--- Index sur les messages
-CREATE INDEX idx_posts_topic ON posts(topic_id);
+-- Index sur les posts
 CREATE INDEX idx_posts_user ON posts(user_id);
+CREATE INDEX idx_posts_created ON posts(created_at);
+
+-- Index sur les commentaires
+CREATE INDEX idx_comments_post ON comments(post_id);
+CREATE INDEX idx_comments_user ON comments(user_id);
+CREATE INDEX idx_comments_created ON comments(created_at);
 
 -- Index sur les réactions
 CREATE INDEX idx_reactions_target ON reactions(target_type, target_id);
 CREATE INDEX idx_reactions_user ON reactions(user_id);
-
--- pour trier et filtrer par dates
-CREATE INDEX idx_topics_created ON topics(created_at);
-CREATE INDEX idx_messages_created ON posts(created_at);

@@ -1,5 +1,5 @@
 import { Router, navigateTo } from './router.js';
-import { renderHome, renderLogin, renderRegister } from './pages.js';
+import { renderHome, renderLogin, renderRegister, renderPostDetails } from './pages.js';
 
 let isLoggedIn = false;
 let username = '';
@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '/': () => renderHome(isLoggedIn, username),
         '/login': renderLogin,
         '/register': renderRegister,
+        '/posts/:id': (params) => renderPostDetails(params, isLoggedIn, username),
     };
     
     const router = new Router(routes);
