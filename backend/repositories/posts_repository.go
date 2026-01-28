@@ -81,3 +81,12 @@ func (r *PostsRepo) CountCommentsByPostID(postID int64) (int, error) {
 	}
 	return commentsCount, nil
 }
+
+func (r *PostsRepo) LikeOrDislikePostRepo(postID int64, userID int64) (int, error) {
+	var LikeorDislike int
+	err := r.db.QueryRow(`SELECT value FROM reactions WHERE target_type = 'posts' AND target_id = ? AND user_id = ?`, postID, userID).Scan(&LikeorDislike)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+	return LikeorDislike, nil
+}
