@@ -85,7 +85,7 @@ export function handlePosts() {
                     post.likes || 0,
                     post.dislikes || 0,
                     isLoggedIn,
-                    post.user_vote || null
+                    post.userReaction || null
                 );
                 postFooter.appendChild(reactionButtons);
 

@@ -99,9 +99,12 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
     const reactionContainer = document.createElement('div');
     reactionContainer.className = 'reaction-container';
     reactionContainer.setAttribute('data-post-id', postId);
+    
+    // Stocker la réaction actuelle en tant qu'état
+    let currentReaction = userReaction;
 
     const likeBtn = document.createElement('button');
-    likeBtn.className = `reaction-btn like-btn ${userReaction === 1 ? 'active' : ''}`;
+    likeBtn.className = `reaction-btn like-btn ${currentReaction === 1 ? 'active' : ''}`;
     likeBtn.innerHTML = `
         <span class="reaction-icon">👍</span>
         <span class="reaction-count">${likes}</span>
@@ -110,7 +113,7 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
     likeBtn.disabled = !isLoggedIn;
 
     const dislikeBtn = document.createElement('button');
-    dislikeBtn.className = `reaction-btn dislike-btn ${userReaction === -1 ? 'active' : ''}`;
+    dislikeBtn.className = `reaction-btn dislike-btn ${currentReaction === -1 ? 'active' : ''}`;
     dislikeBtn.innerHTML = `
         <span class="reaction-icon">👎</span>
         <span class="reaction-count">${dislikes}</span>
@@ -122,12 +125,12 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
     if (isLoggedIn) {
         likeBtn.addEventListener('click', async (e) => {
             e.stopPropagation(); // Empêcher la navigation vers le post
-            await handleReactionClick(postId, 1, likeBtn, dislikeBtn, userReaction);
+            currentReaction = await handleReactionClick(postId, 1, likeBtn, dislikeBtn, currentReaction);
         });
 
         dislikeBtn.addEventListener('click', async (e) => {
             e.stopPropagation(); // Empêcher la navigation vers le post
-            await handleReactionClick(postId, -1, likeBtn, dislikeBtn, userReaction);
+            currentReaction = await handleReactionClick(postId, -1, likeBtn, dislikeBtn, currentReaction);
         });
     } else {
         // Afficher un message pour les utilisateurs non connectés
@@ -148,27 +151,25 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
  * @param {HTMLElement} likeBtn - Le bouton like
  * @param {HTMLElement} dislikeBtn - Le bouton dislike
  * @param {number|null} currentReaction - La réaction actuelle
+ * @returns {Promise<number|null>} - La nouvelle réaction
  */
 async function handleReactionClick(postId, newValue, likeBtn, dislikeBtn, currentReaction) {
     try {
         let result;
+        let newReaction = currentReaction;
 
         // Si l'utilisateur clique sur la même réaction, on la supprime
         if (currentReaction === newValue) {
             result = await removeReaction(postId);
+            newReaction = null;
 
             // Mettre à jour l'interface
             likeBtn.classList.remove('active');
             dislikeBtn.classList.remove('active');
-
-            // Mettre à jour les compteurs
-            updateReactionCounts(likeBtn, dislikeBtn, result.totalLikes, result.totalDislikes);
-
-            // Mettre à jour la réaction actuelle
-            currentReaction = null;
         } else {
             // Sinon, on ajoute/modifie la réaction
             result = await addReaction(postId, newValue);
+            newReaction = newValue;
 
             // Mettre à jour l'interface
             if (newValue === 1) {
@@ -178,22 +179,25 @@ async function handleReactionClick(postId, newValue, likeBtn, dislikeBtn, curren
                 dislikeBtn.classList.add('active');
                 likeBtn.classList.remove('active');
             }
-
-            // Mettre à jour les compteurs
-            updateReactionCounts(likeBtn, dislikeBtn, result.totalLikes, result.totalDislikes);
-
-            // Mettre à jour la réaction actuelle
-            currentReaction = newValue;
         }
 
+        // Mettre à jour les compteurs
+        updateReactionCounts(likeBtn, dislikeBtn, result.totalLikes, result.totalDislikes);
+
         // Animation de feedback
-        const activeBtn = newValue === 1 ? likeBtn : dislikeBtn;
-        activeBtn.classList.add('reaction-pulse');
-        setTimeout(() => activeBtn.classList.remove('reaction-pulse'), 600);
+        const activeBtn = newReaction === 1 ? likeBtn : (newReaction === -1 ? dislikeBtn : null);
+        if (activeBtn) {
+            activeBtn.classList.add('reaction-pulse');
+            setTimeout(() => activeBtn.classList.remove('reaction-pulse'), 600);
+        }
+
+        // Retourner la nouvelle réaction pour mettre à jour le state
+        return newReaction;
 
     } catch (error) {
         console.error('Error handling reaction:', error);
         alert(error.message);
+        return currentReaction; // Retourner l'ancienne réaction en cas d'erreur
     }
 }
 

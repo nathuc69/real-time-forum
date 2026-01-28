@@ -23,6 +23,7 @@ func Router(cs domain.ClientService, ps domain.PostsService, cts domain.Comments
 
 	// Routes protégées (authentification requise)
 	mux.Handle("/api/posts/{postId}/comments", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(NewCommentHandler))))
+	mux.Handle("/api/posts/{postId}/reaction", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(ReactionHandler))))
 
 	// Route pour un post spécifique (doit être après les routes plus spécifiques)
 	mux.Handle("/api/posts/", middleware.CORS(http.HandlerFunc(GetPostByIDHandler)))

@@ -17,9 +17,16 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Récupérer l'utilisateur depuis le contexte (optionnel)
+	var userID int64 = 0
+	user, ok := r.Context().Value("user").(*domain.User)
+	if ok && user != nil {
+		userID = user.ID
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
-	posts, err := postsService.GetAllPostsService()
+	posts, err := postsService.GetAllPostsService(userID)
 	if err != nil {
 		http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
 		return

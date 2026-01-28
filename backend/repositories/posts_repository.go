@@ -90,3 +90,38 @@ func (r *PostsRepo) LikeOrDislikePostRepo(postID int64, userID int64) (int, erro
 	}
 	return LikeorDislike, nil
 }
+
+// AddReactionRepo ajoute ou met à jour une réaction
+func (r *PostsRepo) AddReactionRepo(postID int64, userID int64, value int) error {
+	// Vérifier si une réaction existe déjà
+	var existingValue int
+	err := r.db.QueryRow(`SELECT value FROM reactions WHERE target_type = 'posts' AND target_id = ? AND user_id = ?`, postID, userID).Scan(&existingValue)
+
+	if err == sql.ErrNoRows {
+		// Aucune réaction existante, en créer une nouvelle
+		_, err = r.db.Exec(`INSERT INTO reactions (value, target_type, target_id, user_id) VALUES (?, 'posts', ?, ?)`, value, postID, userID)
+		return err
+	} else if err != nil {
+		return err
+	}
+
+	// Une réaction existe déjà, la mettre à jour
+	_, err = r.db.Exec(`UPDATE reactions SET value = ?, updated_at = CURRENT_TIMESTAMP WHERE target_type = 'posts' AND target_id = ? AND user_id = ?`, value, postID, userID)
+	return err
+}
+
+// RemoveReactionRepo supprime une réaction
+func (r *PostsRepo) RemoveReactionRepo(postID int64, userID int64) error {
+	_, err := r.db.Exec(`DELETE FROM reactions WHERE target_type = 'posts' AND target_id = ? AND user_id = ?`, postID, userID)
+	return err
+}
+
+// GetUserReactionRepo récupère la réaction d'un utilisateur pour un post
+func (r *PostsRepo) GetUserReactionRepo(postID int64, userID int64) (int, error) {
+	var value int
+	err := r.db.QueryRow(`SELECT value FROM reactions WHERE target_type = 'posts' AND target_id = ? AND user_id = ?`, postID, userID).Scan(&value)
+	if err == sql.ErrNoRows {
+		return 0, nil // Pas de réaction trouvée
+	}
+	return value, err
+}

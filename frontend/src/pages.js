@@ -170,7 +170,7 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                     post.likes || 0,
                     post.dislikes || 0,
                     isLoggedIn,
-                    post.userReaction || null
+                    post.islikeordislike || null
                 );
                 postFooter.appendChild(reactionButtons);
 
