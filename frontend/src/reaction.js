@@ -100,10 +100,14 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
     reactionContainer.className = 'reaction-container';
     reactionContainer.setAttribute('data-post-id', postId);
     
-    // Stocker la réaction actuelle en tant qu'état
-    let currentReaction = userReaction;
+    // Stocker la réaction actuelle en tant qu'état - convertir en nombre si nécessaire
+    let currentReaction = userReaction !== null && userReaction !== undefined ? Number(userReaction) : null;
+    
+    // Debug - voir la valeur reçue
+    console.log(`Post ${postId}: userReaction =`, userReaction, 'currentReaction =', currentReaction);
 
     const likeBtn = document.createElement('button');
+    likeBtn.id = 'like-btn-' + postId;
     likeBtn.className = `reaction-btn like-btn ${currentReaction === 1 ? 'active' : ''}`;
     likeBtn.innerHTML = `
         <span class="reaction-icon">👍</span>
@@ -113,6 +117,7 @@ export function createReactionButtons(postId, likes = 0, dislikes = 0, isLoggedI
     likeBtn.disabled = !isLoggedIn;
 
     const dislikeBtn = document.createElement('button');
+    dislikeBtn.id = 'dislike-btn-' + postId;
     dislikeBtn.className = `reaction-btn dislike-btn ${currentReaction === -1 ? 'active' : ''}`;
     dislikeBtn.innerHTML = `
         <span class="reaction-icon">👎</span>
