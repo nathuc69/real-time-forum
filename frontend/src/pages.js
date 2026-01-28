@@ -1,7 +1,7 @@
 // Page rendering functions
 import { setupEventListeners } from './login.js';
 import { handlePosts } from './posts.js';
-import { createReactionButtons } from './reactions.js';
+import { createReactionButtons } from './reaction.js';
 
 
 export function renderHome(loggedIn, username) {

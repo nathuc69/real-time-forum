@@ -1,5 +1,5 @@
 import { navigateTo } from './router.js';
-import { createReactionButtons } from './reactions.js';
+import { createReactionButtons } from './reaction.js';
 
 
 export function EventPosts() {
