@@ -15,13 +15,13 @@ async function checkAuthentication() {
         const data = await response.json();
 
         if (data.authenticated) {
-            console.log('✅ Utilisateur connecté:', data.username);
+            console.log(':white_check_mark: Utilisateur connecté:', data.username);
             isLoggedIn = true;
             username = data.username
             // L'utilisateur est connecté, rester sur la page actuelle ou rediriger vers home
             return true;
         } else {
-            console.log('❌ Pas de session active');
+            console.log(':x: Pas de session active');
             // Rediriger vers la page de login si pas sur une page publique
             const currentPath = window.location.hash.replace('#', '') || '/';
             // if (currentPath !== '/login' && currentPath !== '/register') {
@@ -38,14 +38,14 @@ async function checkAuthentication() {
 // Initialize app after DOM is loaded
 document.addEventListener('DOMContentLoaded', async () => {
     await checkAuthentication();
-    
+
     const routes = {
         '/': () => renderHome(isLoggedIn, username),
         '/login': renderLogin,
         '/register': renderRegister,
         '/posts/:id': (params) => renderPostDetails(params, isLoggedIn, username),
     };
-    
+
     const router = new Router(routes);
 });
 
@@ -71,7 +71,7 @@ document.addEventListener('click', (e) => {
     } else if (e.target.id === 'backBtn') {
         e.preventDefault();
         navigateTo('/');
-    }else if (e.target.id === 'LogoutBtn') {
+    } else if (e.target.id === 'LogoutBtn') {
         e.preventDefault();
         const logoutPopup = document.getElementById("logoutPopup");
         const logoutOverlay = document.getElementById("logoutOverlay");
