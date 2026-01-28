@@ -33,12 +33,12 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Authentification optionnelle
+	var userID int64 = 0
 	user, ok := r.Context().Value("user").(*domain.User)
-	if !ok || user == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+	if ok && user != nil {
+		userID = user.ID
 	}
-	userID := user.ID
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

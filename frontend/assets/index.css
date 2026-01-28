@@ -255,6 +255,7 @@ body.blurred {
         transform: translate(-50%, -60%);
         opacity: 0;
     }
+
     to {
         transform: translate(-50%, -50%);
         opacity: 1;
@@ -410,11 +411,11 @@ body.blurred {
     #postsContainer {
         padding: 10px;
     }
-    
+
     .post-card {
         padding: 15px;
     }
-    
+
     .post-title {
         font-size: 1.2rem;
     }
@@ -456,4 +457,155 @@ body.blurred {
 
 .post-detail .post-footer {
     margin-top: 30px;
+}
+
+/* Vote Buttons */
+.post-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-right: auto;
+    /* Push comments to the right if needed, or just keep them together */
+}
+
+.btn-vote {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    padding: 6px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    z-index: 10;
+    /* Ensure it's above card link if implemented via overlay, though stopPropagation is better */
+}
+
+.btn-vote:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.btn-vote.active {
+    background: #e6f0ff;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.btn-vote.active.dislike-btn {
+    background: #ffe6e6;
+    border-color: #ff6b6b;
+    color: #ff6b6b;
+}
+
+.post-stat {
+    margin-left: auto;
+    /* Push stats to the right */
+}
+
+/* Reaction Buttons Styles */
+.reaction-container {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.reaction-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #666;
+}
+
+.reaction-btn:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.reaction-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.reaction-btn.like-btn:not(:disabled):hover {
+    border-color: #4CAF50;
+    background: #f1f8f4;
+    color: #4CAF50;
+}
+
+.reaction-btn.dislike-btn:not(:disabled):hover {
+    border-color: #ff6b6b;
+    background: #fff5f5;
+    color: #ff6b6b;
+}
+
+.reaction-btn.active.like-btn {
+    border-color: #4CAF50;
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.reaction-btn.active.dislike-btn {
+    border-color: #ff6b6b;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.reaction-icon {
+    font-size: 1.2rem;
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.reaction-btn:not(:disabled):hover .reaction-icon {
+    transform: scale(1.2);
+}
+
+.reaction-count {
+    font-weight: 700;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Animation de pulse lors du clic */
+@keyframes reactionPulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.reaction-pulse {
+    animation: reactionPulse 0.6s ease;
+}
+
+/* Responsive pour les réactions */
+@media (max-width: 768px) {
+    .reaction-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+    .reaction-icon {
+        font-size: 1rem;
+    }
 }

@@ -1,5 +1,5 @@
-import {navigateTo } from './router.js';
-export function EventLoginBtn(){
+import { navigateTo } from './router.js';
+export function EventLoginBtn() {
     const loginBtn = document.getElementById("loginBtn");
     const loginMenu = document.getElementById("loginMenu");
     const menu = document.getElementById("MenuPage");
@@ -33,7 +33,7 @@ export function setupEventListeners() {
     const submitRegisterBtn = document.getElementById("SubmitRegister");
     const SubmitLogoutBtn = document.getElementById("SubmitLogoutBtn");
     const cancelLogoutBtn = document.getElementById("cancelLogoutBtn");
-    
+
     if (submitLoginBtn) {
         submitLoginBtn.addEventListener("click", handleLogin);
     }
@@ -78,16 +78,16 @@ export async function handleLogin(e) {
             credentials: 'include',
         });
 
-        if (response.ok) {  
+        if (response.ok) {
             const data = await response.json();
             console.log('Login successful:', data);
-            // Redirect to home and force page reload to update auth state
-            window.location.hash = '#/';
-            window.location.reload();
+            navigateTo('/');
+            // window.location.reload();
         } else {
             const errorData = await response.json();
             console.error('Login failed:', errorData);
-            // Handle login failure (e.g., show error message)
+            navigateTo('/login');
+            // window.location.reload();
         }
     } catch (error) {
         console.error('Error during login:', error);
@@ -112,18 +112,20 @@ export async function handleRegister(e) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, email, age: Number(age), firstName, lastName , Gender, password  }),
+            body: JSON.stringify({ username, email, age: Number(age), firstName, lastName, Gender, password }),
             credentials: 'include',
         });
 
         if (response.ok) {
             const data = await response.json();
             console.log('Registration successful:', data);
-            // Handle successful registration (e.g., redirect, update UI)
+            navigateTo('/login');
+            // window.location.reload();
         } else {
             const errorData = await response.json();
             console.error('Registration failed:', errorData);
-            // Handle registration failure (e.g., show error message)
+            navigateTo('/register');
+            // window.location.reload();
         }
     } catch (error) {
         console.error('Error during registration:', error);
@@ -146,10 +148,10 @@ export async function handleLogout(e) {
             const logoutOverlay = document.getElementById("logoutOverlay");
             logoutPopupElement.style.display = "none";
             logoutOverlay.style.display = "none";
-            
+
             // Redirect to login page
-            window.location.hash = '#/login';
-            window.location.reload();
+            navigateTo('/');
+            // window.location.reload();
         } else {
             console.error('Logout failed');
         }
