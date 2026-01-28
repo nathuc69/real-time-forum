@@ -7,6 +7,7 @@ type Post struct {
 	UserID       int64      `json:"userId"`
 	Username     string     `json:"username"`
 	Likes        int        `json:"likes"`
+	Dislikes     int        `json:"dislikes"`
 	Comments     int        `json:"comments"`
 	CreatedAt    string     `json:"createdAt"`
 	CommentsList []*Comment `json:"commentsList,omitempty"`
@@ -18,6 +19,7 @@ type PostsRepository interface {
 	GetUsernameByIdRepo(userID int64) (string, error)
 	CountLikesByPostID(postID int64) (int, error)
 	CountCommentsByPostID(postID int64) (int, error)
+	CountDislikesByPostID(postID int64) (int, error)
 }
 
 type PostsService interface {

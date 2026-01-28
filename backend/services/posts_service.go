@@ -54,6 +54,10 @@ func (s *postsService) GetPostByIDService(postID int64) (*domain.Post, error) {
 	if err != nil {
 		return nil, err
 	}
+	dislikesCount, err := s.postsRepo.CountDislikesByPostID(post.ID)
+	if err != nil {
+		return nil, err
+	}
 	commentsCount, err := s.postsRepo.CountCommentsByPostID(post.ID)
 	if err != nil {
 		return nil, err
@@ -62,6 +66,6 @@ func (s *postsService) GetPostByIDService(postID int64) (*domain.Post, error) {
 	post.Likes = likesCount
 	post.Comments = commentsCount
 	post.Username = username
-
+	post.Dislikes = dislikesCount
 	return post, nil
 }
