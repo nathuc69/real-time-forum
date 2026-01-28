@@ -1,10 +1,12 @@
 // Page rendering functions
 import { setupEventListeners } from './login.js';
 import { handlePosts } from './posts.js';
+import { createReactionButtons } from './reaction.js';
+
 
 export function renderHome(loggedIn, username) {
     if (!loggedIn) {
-    document.body.innerHTML = `
+        document.body.innerHTML = `
         <div id="MenuPage">
             <h1>Welcome to the Real-Time Forum</h1>
             <button id="loginBtn">Login</button>
@@ -13,7 +15,7 @@ export function renderHome(loggedIn, username) {
         </div>
         
     `;
-            handlePosts();
+        handlePosts();
 
     } else {
         document.body.innerHTML = `
@@ -94,7 +96,8 @@ export function renderRegister() {
     setupEventListeners();
 }
 
-export function PopupLogout(){`
+export function PopupLogout() {
+    `
     <div id="logoutPopup">
     <h3>Are you sure you want to logout?</h3>
     <button id="SubmitLogoutBtn">Yes, Logout</button>
@@ -105,7 +108,7 @@ export function PopupLogout(){`
 
 export function renderPostDetails(params, isLoggedIn = false, username = '') {
     const postId = params?.id;
-    
+
     document.body.innerHTML = `
         <div id="logoutOverlay"></div>
         <div id="postDetailsPage">
@@ -135,23 +138,46 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
             })
             .then((post) => {
                 const container = document.getElementById('postDetailsContainer');
-                container.innerHTML = `
-                    <div class="post-detail">
-                        <div class="post-header">
-                            <div class="post-avatar">${(post.username || '?')[0].toUpperCase()}</div>
-                            <div class="post-author-info">
-                                <span class="post-author">${post.username || 'Anonymous'}</span>
-                                <span class="post-date">${new Date(post.createdAt).toLocaleString()}</span>
-                            </div>
-                        </div>
-                        <h1 class="post-detail-title">${post.title}</h1>
-                        <div class="post-detail-content">${post.content}</div>
-                        <div class="post-footer">
-                            <span class="post-stat">💬 ${post.comments} comments</span>
-                            <span class="post-stat">👍 ${post.likes} likes</span>
+
+                // Créer le contenu principal du post
+                const postDetailDiv = document.createElement('div');
+                postDetailDiv.className = 'post-detail';
+                postDetailDiv.innerHTML = `
+                    <div class="post-header">
+                        <div class="post-avatar">${(post.username || '?')[0].toUpperCase()}</div>
+                        <div class="post-author-info">
+                            <span class="post-author">${post.username || 'Anonymous'}</span>
+                            <span class="post-date">${new Date(post.createdAt).toLocaleString()}</span>
                         </div>
                     </div>
+                    <h1 class="post-detail-title">${post.title}</h1>
+                    <div class="post-detail-content">${post.content}</div>
                 `;
+
+                // Créer le footer avec les réactions
+                const postFooter = document.createElement('div');
+                postFooter.className = 'post-footer';
+
+                // Compteur de commentaires
+                const commentStat = document.createElement('span');
+                commentStat.className = 'post-stat';
+                commentStat.innerHTML = `💬 ${post.comments || 0} comments`;
+                postFooter.appendChild(commentStat);
+
+                // Boutons de réaction
+                const reactionButtons = createReactionButtons(
+                    post.id,
+                    post.likes || 0,
+                    post.dislikes || 0,
+                    isLoggedIn,
+                    post.islikeordislike || null
+                );
+                postFooter.appendChild(reactionButtons);
+
+                postDetailDiv.appendChild(postFooter);
+                container.innerHTML = '';
+                container.appendChild(postDetailDiv);
+
                 if (post.commentsList && post.commentsList.length > 0) {
                     const commentsContainer = document.createElement('div');
                     commentsContainer.id = 'commentsContainer';
@@ -159,9 +185,9 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                     commentsContainer.innerHTML = '<h2 style="font-size: 1.5em; margin-bottom: 20px; color: #333;">Comments</h2>';
                     document.getElementById('postDetailsContainer').appendChild(commentsContainer);
                     post.commentsList.forEach(comment => {
-                    const commentElement = document.createElement('div');
-                    commentElement.className = 'comment';
-                    commentElement.style.cssText = `
+                        const commentElement = document.createElement('div');
+                        commentElement.className = 'comment';
+                        commentElement.style.cssText = `
                         background-color: #f9f9f9;
                         border-left: 4px solid #4CAF50;
                         padding: 15px;
@@ -170,72 +196,72 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                         transition: box-shadow 0.3s ease;
                     `;
-                    commentElement.onmouseover = function() { this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; };
-                    commentElement.onmouseout = function() { this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; };
-                    if (comment.username == username){
-                        commentElement.innerHTML = `
+                        commentElement.onmouseover = function () { this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; };
+                        commentElement.onmouseout = function () { this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; };
+                        if (comment.username == username) {
+                            commentElement.innerHTML = `
                         <div class="comment-header" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <strong style="color: #11910bff; font-size: 1.05em;">${'Vous'}</strong> 
                             <span style="color: #999; font-size: 0.85em;">${new Date(comment.createdAt).toLocaleString()}</span>
                         </div>
                         <div class="comment-content" style="color: #555; line-height: 1.6;">${comment.content}</div>
                     `;
-                    }else{
-                        commentElement.innerHTML = `
+                        } else {
+                            commentElement.innerHTML = `
                         <div class="comment-header" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                             <strong style="color: #333; font-size: 1.05em;">${comment.username || 'Anonymous'}</strong> 
                             <span style="color: #999; font-size: 0.85em;">${new Date(comment.createdAt).toLocaleString()}</span>
                         </div>
                         <div class="comment-content" style="color: #555; line-height: 1.6;">${comment.content}</div>
                     `;
-                    }
-                    commentsContainer.appendChild(commentElement);
+                        }
+                        commentsContainer.appendChild(commentElement);
                     });
                 }
                 //#region Formulaire d'ajout de commentaire
                 // N'afficher le formulaire que si l'utilisateur est connecté
                 if (isLoggedIn) {
-                const commentForm = document.createElement('div');
-                commentForm.id = 'commentForm';
-                commentForm.style.marginTop = '40px';
-                commentForm.innerHTML = `
+                    const commentForm = document.createElement('div');
+                    commentForm.id = 'commentForm';
+                    commentForm.style.marginTop = '40px';
+                    commentForm.innerHTML = `
                     <h2 style="font-size: 1.5em; margin-bottom: 20px; color: #333;">Add a Comment</h2>
                     <textarea id="commentContent" rows="4" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; resize: vertical;" placeholder="Write your comment here..."></textarea>
                     <button id="submitCommentBtn" style="margin-top: 10px; padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit Comment</button>
                 `;
-                document.getElementById('postDetailsContainer').appendChild(commentForm);
+                    document.getElementById('postDetailsContainer').appendChild(commentForm);
 
-                document.getElementById('submitCommentBtn').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const commentContent = document.getElementById('commentContent').value;
-                    if (commentContent.trim() === '') {
-                        alert('Comment cannot be empty');
-                        return;
-                    }
-                    fetch(`http://localhost:8086/api/posts/${postId}/comments`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        credentials: 'include',
-                        body: JSON.stringify({ content: commentContent }),
-                    })
-                    .then((response) => {
-                        if (!response.ok) {
-                            if (response.status === 401) {
-                                throw new Error('You must be logged in to post a comment');
-                            }
-                            throw new Error('Failed to submit comment');
+                    document.getElementById('submitCommentBtn').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const commentContent = document.getElementById('commentContent').value;
+                        if (commentContent.trim() === '') {
+                            alert('Comment cannot be empty');
+                            return;
                         }
-                        return response.json();
-                    })
-                    .then((newComment) => {
-                        // Ajouter le nouveau commentaire à la liste des commentaires affichés
-                        const commentsContainer = document.getElementById('commentsContainer');
-                        if (commentsContainer) {
-                            const commentElement = document.createElement('div');
-                            commentElement.className = 'comment';
-                            commentElement.style.cssText = `
+                        fetch(`http://localhost:8086/api/posts/${postId}/comments`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            credentials: 'include',
+                            body: JSON.stringify({ content: commentContent }),
+                        })
+                            .then((response) => {
+                                if (!response.ok) {
+                                    if (response.status === 401) {
+                                        throw new Error('You must be logged in to post a comment');
+                                    }
+                                    throw new Error('Failed to submit comment');
+                                }
+                                return response.json();
+                            })
+                            .then((newComment) => {
+                                // Ajouter le nouveau commentaire à la liste des commentaires affichés
+                                const commentsContainer = document.getElementById('commentsContainer');
+                                if (commentsContainer) {
+                                    const commentElement = document.createElement('div');
+                                    commentElement.className = 'comment';
+                                    commentElement.style.cssText = `
                                 background-color: #f9f9f9;
                                 border-left: 4px solid #4CAF50;
                                 padding: 15px;
@@ -244,24 +270,24 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                                 box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                                 transition: box-shadow 0.3s ease;
                             `;
-                            commentElement.onmouseover = function() { this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; };
-                            commentElement.onmouseout = function() { this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; };
-                            commentElement.innerHTML = `
+                                    commentElement.onmouseover = function () { this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.15)'; };
+                                    commentElement.onmouseout = function () { this.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'; };
+                                    commentElement.innerHTML = `
                                 <div class="comment-header" style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
                                     <strong style="color: #333; font-size: 1.05em;">${newComment.username || 'Anonymous'}</strong> 
                                     <span style="color: #999; font-size: 0.85em;">${new Date(newComment.createdAt).toLocaleString()}</span>
                                 </div>
                                 <div class="comment-content" style="color: #555; line-height: 1.6;">${newComment.content}</div>
                             `;
-                            commentsContainer.appendChild(commentElement);
-                        }
-                        document.getElementById('commentContent').value = '';
-                    })
-                    .catch((error) => {
-                        console.error('Error submitting comment:', error);
-                        alert('Error submitting comment: ' + error.message);
+                                    commentsContainer.appendChild(commentElement);
+                                }
+                                document.getElementById('commentContent').value = '';
+                            })
+                            .catch((error) => {
+                                console.error('Error submitting comment:', error);
+                                alert('Error submitting comment: ' + error.message);
+                            });
                     });
-                });
                 } else {
                     // Afficher un message pour les utilisateurs non connectés
                     const loginMessage = document.createElement('div');
@@ -282,7 +308,7 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                 `;
             });
     }
-    
+
     // Appeler setupEventListeners pour gérer les événements de logout
     setupEventListeners();
 }

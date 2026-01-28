@@ -17,9 +17,16 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Récupérer l'utilisateur depuis le contexte (optionnel)
+	var userID int64 = 0
+	user, ok := r.Context().Value("user").(*domain.User)
+	if ok && user != nil {
+		userID = user.ID
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 
-	posts, err := postsService.GetAllPostsService()
+	posts, err := postsService.GetAllPostsService(userID)
 	if err != nil {
 		http.Error(w, "Error retrieving posts", http.StatusInternalServerError)
 		return
@@ -33,12 +40,12 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Authentification optionnelle
+	var userID int64 = 0
 	user, ok := r.Context().Value("user").(*domain.User)
-	if !ok || user == nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
+	if ok && user != nil {
+		userID = user.ID
 	}
-	userID := user.ID
 
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)

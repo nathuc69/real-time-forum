@@ -1,8 +1,11 @@
 package services
 
 import (
+	"errors"
 	"real-time-forum/backend/domain"
 )
+
+var ErrInvalidInput = errors.New("invalid input")
 
 type postsService struct {
 	postsRepo domain.PostsRepository
@@ -11,7 +14,7 @@ type postsService struct {
 func NewPostsService(pr domain.PostsRepository) domain.PostsService {
 	return &postsService{postsRepo: pr}
 }
-func (s *postsService) GetAllPostsService() ([]*domain.Post, error) {
+func (s *postsService) GetAllPostsService(userId int64) ([]*domain.Post, error) {
 	posts, err := s.postsRepo.GetAllPostsRepo()
 	if err != nil {
 		return nil, err
@@ -27,13 +30,32 @@ func (s *postsService) GetAllPostsService() ([]*domain.Post, error) {
 		if err != nil {
 			return nil, err
 		}
+		dislikesCount, err := s.postsRepo.CountDislikesByPostID(post.ID)
+		if err != nil {
+			return nil, err
+		}
 		commentsCount, err := s.postsRepo.CountCommentsByPostID(post.ID)
 		if err != nil {
 			return nil, err
 		}
+
+		// Récupérer la réaction de l'utilisateur si userId > 0
+		var userReaction *int
+		if userId > 0 {
+			reaction, err := s.postsRepo.GetUserReactionRepo(post.ID, userId)
+			if err != nil {
+				return nil, err
+			}
+			if reaction != 0 {
+				userReaction = &reaction
+			}
+		}
+
 		post.Likes = likesCount
+		post.Dislikes = dislikesCount
 		post.Comments = commentsCount
 		post.Username = username
+		post.UserReaction = userReaction
 	}
 
 	return posts, nil
@@ -62,16 +84,98 @@ func (s *postsService) GetPostByIDService(postID int64, userID int64) (*domain.P
 	if err != nil {
 		return nil, err
 	}
-	IslikeOrnot, err := s.postsRepo.LikeOrDislikePostRepo(post.ID, userID)
-	if err != nil {
-		return nil, err
+
+	// Récupérer la réaction de l'utilisateur si userID > 0
+	var userReaction *int
+	if userID > 0 {
+		reaction, err := s.postsRepo.GetUserReactionRepo(post.ID, userID)
+		if err != nil {
+			return nil, err
+		}
+		if reaction != 0 {
+			userReaction = &reaction
+		}
 	}
 
-	post.IslikeOrDislike = IslikeOrnot
 	post.Dislikes = dislikesCount
 	post.Likes = likesCount
 	post.Comments = commentsCount
 	post.Username = username
-	post.Dislikes = dislikesCount
+	post.UserReaction = userReaction
 	return post, nil
+}
+
+// AddReactionService ajoute ou modifie une réaction
+func (s *postsService) AddReactionService(postID int64, userID int64, value int) (map[string]interface{}, error) {
+	// Valider la valeur (doit être 1 ou -1)
+	if value != 1 && value != -1 {
+		return nil, ErrInvalidInput
+	}
+
+	// Ajouter ou mettre à jour la réaction
+	err := s.postsRepo.AddReactionRepo(postID, userID, value)
+	if err != nil {
+		return nil, err
+	}
+
+	// Récupérer les nouveaux totaux
+	likes, err := s.postsRepo.CountLikesByPostID(postID)
+	if err != nil {
+		return nil, err
+	}
+	dislikes, err := s.postsRepo.CountDislikesByPostID(postID)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"success":       true,
+		"totalLikes":    likes,
+		"totalDislikes": dislikes,
+		"userReaction":  value,
+	}, nil
+}
+
+// RemoveReactionService supprime une réaction
+func (s *postsService) RemoveReactionService(postID int64, userID int64) (map[string]interface{}, error) {
+	err := s.postsRepo.RemoveReactionRepo(postID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Récupérer les nouveaux totaux
+	likes, err := s.postsRepo.CountLikesByPostID(postID)
+	if err != nil {
+		return nil, err
+	}
+	dislikes, err := s.postsRepo.CountDislikesByPostID(postID)
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"success":       true,
+		"totalLikes":    likes,
+		"totalDislikes": dislikes,
+		"userReaction":  nil,
+	}, nil
+}
+
+// GetUserReactionService récupère la réaction d'un utilisateur
+func (s *postsService) GetUserReactionService(postID int64, userID int64) (map[string]interface{}, error) {
+	value, err := s.postsRepo.GetUserReactionRepo(postID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]interface{}{
+		"hasReacted": value != 0,
+		"value":      nil,
+	}
+
+	if value != 0 {
+		result["value"] = value
+	}
+
+	return result, nil
 }

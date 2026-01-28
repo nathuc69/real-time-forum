@@ -1,17 +1,25 @@
 import { navigateTo } from './router.js';
+import { createReactionButtons } from './reaction.js';
+
 
 export function EventPosts() {
     document.querySelectorAll('.post-card').forEach(card => {
-        card.addEventListener('click', () => {
+        card.addEventListener('click', (e) => {
+            // Prevent navigation if clicking on reaction buttons
+            if (e.target.closest('.reaction-btn')) return;
+
             const postId = card.getAttribute('data-post-id');
             console.log(`Post ID clicked: ${postId}`);
-            // Naviguer vers la page de détails du post
             navigateTo(`/posts/${postId}`);
         });
     });
 }
 
+
 export function handlePosts() {
+    // Vérifier si l'utilisateur est connecté
+    const isLoggedIn = document.cookie.includes('session_token');
+
     fetch("http://localhost:8086/api/posts")
         .then((response) => response.json())
         .then((data) => {
@@ -57,17 +65,29 @@ export function handlePosts() {
                 const contentElement = document.createElement("p");
                 contentElement.className = "post-content";
                 const maxLength = 150;
-                contentElement.textContent = post.content.length > maxLength 
-                    ? post.content.substring(0, maxLength) + "..." 
+                contentElement.textContent = post.content.length > maxLength
+                    ? post.content.substring(0, maxLength) + "..."
                     : post.content;
 
                 // Footer avec indicateurs
                 const postFooter = document.createElement("div");
                 postFooter.className = "post-footer";
-                postFooter.innerHTML = `
-                    <span class="post-stat">💬 ${post.comments} comments</span>
-                    <span class="post-stat">👍 ${post.likes} likes</span>
-                `;
+
+                // Compteur de commentaires
+                const commentStat = document.createElement("span");
+                commentStat.className = "post-stat";
+                commentStat.innerHTML = `💬 ${post.comments || 0} comments`;
+                postFooter.appendChild(commentStat);
+
+                // Boutons de réaction
+                const reactionButtons = createReactionButtons(
+                    post.id,
+                    post.likes || 0,
+                    post.dislikes || 0,
+                    isLoggedIn,
+                    post.userReaction || null
+                );
+                postFooter.appendChild(reactionButtons);
 
                 postElement.appendChild(postHeader);
                 postElement.appendChild(titleElement);
@@ -75,7 +95,7 @@ export function handlePosts() {
                 postElement.appendChild(postFooter);
                 postsContainer.appendChild(postElement);
             });
-            
+
             // Activer les événements de clic sur les posts
             EventPosts();
         })
@@ -83,6 +103,7 @@ export function handlePosts() {
             console.error("Error fetching posts:", error);
         });
 }
+
 
 function formatDate(date) {
     const now = new Date();
