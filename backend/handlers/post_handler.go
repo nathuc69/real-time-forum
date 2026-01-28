@@ -33,6 +33,13 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
+	user, ok := r.Context().Value("user").(*domain.User)
+	if !ok || user == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+	userID := user.ID
+
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -54,7 +61,7 @@ func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	post, err := postsService.GetPostByIDService(postID)
+	post, err := postsService.GetPostByIDService(postID, userID)
 	if err != nil {
 		http.Error(w, "Post not found", http.StatusNotFound)
 		return

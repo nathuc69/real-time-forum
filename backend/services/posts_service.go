@@ -39,7 +39,7 @@ func (s *postsService) GetAllPostsService() ([]*domain.Post, error) {
 	return posts, nil
 }
 
-func (s *postsService) GetPostByIDService(postID int64) (*domain.Post, error) {
+func (s *postsService) GetPostByIDService(postID int64, userID int64) (*domain.Post, error) {
 	post, err := s.postsRepo.GetPostByIDRepo(postID)
 	if err != nil {
 		return nil, err
@@ -54,14 +54,24 @@ func (s *postsService) GetPostByIDService(postID int64) (*domain.Post, error) {
 	if err != nil {
 		return nil, err
 	}
+	dislikesCount, err := s.postsRepo.CountDislikesByPostID(post.ID)
+	if err != nil {
+		return nil, err
+	}
 	commentsCount, err := s.postsRepo.CountCommentsByPostID(post.ID)
 	if err != nil {
 		return nil, err
 	}
+	IslikeOrnot, err := s.postsRepo.LikeOrDislikePostRepo(post.ID, userID)
+	if err != nil {
+		return nil, err
+	}
 
+	post.IslikeOrDislike = IslikeOrnot
+	post.Dislikes = dislikesCount
 	post.Likes = likesCount
 	post.Comments = commentsCount
 	post.Username = username
-
+	post.Dislikes = dislikesCount
 	return post, nil
 }
