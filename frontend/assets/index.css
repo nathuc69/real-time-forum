@@ -609,3 +609,29 @@ body.blurred {
         font-size: 1rem;
     }
 }
+/* Categories */
+.post-categories {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.category-tag {
+    background-color: #f0f2f5;
+    color: #667eea;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.category-tag:hover {
+    background-color: #667eea;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+}

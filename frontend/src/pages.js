@@ -5,16 +5,32 @@ import { createReactionButtons } from './reaction.js';
 
 
 export function renderHome(loggedIn, username) {
+    const filterHTML = `
+        <div class="filters" style="margin: 20px 0; display: flex; justify-content: center; gap: 10px;">
+            <select id="sortBy" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="recent">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="likes">Most Liked</option>
+            </select>
+            <select id="categoryFilter" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="">All Categories</option>
+            </select>
+            <button id="filterBtn" style="padding: 8px 16px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Filter</button>
+        </div>
+    `;
+
     if (!loggedIn) {
         document.body.innerHTML = `
         <div id="MenuPage">
             <h1>Welcome to the Real-Time Forum</h1>
             <button id="loginBtn">Login</button>
             <button id="registerBtn">Register</button>
+            ${filterHTML}
             <div id="postsContainer"></div>
         </div>
         
     `;
+        loadCategories();
         handlePosts();
 
     } else {
@@ -22,7 +38,34 @@ export function renderHome(loggedIn, username) {
         <div id="logoutOverlay"></div>
         <div id="MenuPage">
             <h1>Welcome to the Real-Time Forum, ${username}</h1>
-            <button id="LogoutBtn">Logout</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <button id="createPostBtn" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Create Post</button>
+                <button id="LogoutBtn">Logout</button>
+            </div>
+            
+            <div id="createPostForm" style="display: none; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px;">
+                <h3 style="margin-top: 0;">Create a New Post</h3>
+                <form id="newPostForm">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Title:</label>
+                        <input type="text" id="postTitle" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Content:</label>
+                        <textarea id="postContent" required rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px;">Categories (comma separated):</label>
+                        <input type="text" id="postCategories" placeholder="tech, news, general" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </div>
+                    <div style="text-align: right;">
+                        <button type="button" id="cancelPostBtn" style="padding: 8px 16px; margin-right: 10px; background: #ddd; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                        <button type="submit" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">Publish</button>
+                    </div>
+                </form>
+            </div>
+
+            ${filterHTML}
             <div id="postsContainer"></div>
         </div>
         <div id="logoutPopup">
@@ -32,8 +75,83 @@ export function renderHome(loggedIn, username) {
         </div>
     `;
         setupEventListeners();
+
+        // Setup Create Post listeners
+        const createBtn = document.getElementById('createPostBtn');
+        const form = document.getElementById('createPostForm');
+        const cancelBtn = document.getElementById('cancelPostBtn');
+        const postForm = document.getElementById('newPostForm');
+
+        createBtn.addEventListener('click', () => {
+            form.style.display = 'block';
+            createBtn.style.display = 'none';
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            form.style.display = 'none';
+            createBtn.style.display = 'block';
+            postForm.reset();
+        });
+
+        postForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('postTitle').value;
+            const content = document.getElementById('postContent').value;
+            const categoriesStr = document.getElementById('postCategories').value;
+            const categories = categoriesStr.split(',').map(c => c.trim()).filter(c => c);
+
+            fetch('http://localhost:8086/api/posts/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                body: JSON.stringify({ title, content, categories })
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error('Failed to create post');
+                    return res.json();
+                })
+                .then(() => {
+                    form.style.display = 'none';
+                    createBtn.style.display = 'block';
+                    postForm.reset();
+                    handlePosts(); // Refresh posts
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert('Error creating post: ' + err.message);
+                });
+        });
+
+        loadCategories();
         handlePosts();
     }
+
+    document.getElementById('filterBtn')?.addEventListener('click', () => {
+        const sortBy = document.getElementById('sortBy').value;
+        const category = document.getElementById('categoryFilter').value;
+        handlePosts(sortBy, category);
+    });
+}
+
+function loadCategories() {
+    fetch('http://localhost:8086/api/categories')
+        .then(res => res.json())
+        .then(categories => {
+            const select = document.getElementById('categoryFilter');
+            if (select) {
+                // Clear existing options except "All Categories"
+                select.innerHTML = '<option value="">All Categories</option>';
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(err => console.error('Error loading categories:', err));
 }
 
 export function renderLogin() {
@@ -151,6 +269,11 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
                         </div>
                     </div>
                     <h1 class="post-detail-title">${post.title}</h1>
+                    ${post.categories && post.categories.length > 0 ?
+                        `<div class="post-categories" style="margin-bottom: 20px;">
+                            ${post.categories.map(cat => `<span class="category-tag">${cat}</span>`).join('')}
+                        </div>`
+                        : ''}
                     <div class="post-detail-content">${post.content}</div>
                 `;
 

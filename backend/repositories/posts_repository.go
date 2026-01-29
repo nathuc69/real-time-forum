@@ -13,11 +13,26 @@ func NewPostsRepository(db *sql.DB) domain.PostsRepository {
 	return &PostsRepo{db: db}
 }
 
-func (r *PostsRepo) GetAllPostsRepo() ([]*domain.Post, error) {
-	rows, err := r.db.Query(`
-		SELECT id, title, content, user_id, created_at
-		FROM posts
-		ORDER BY created_at DESC`)
+func (r *PostsRepo) GetAllPostsRepo(sortBy string, category string) ([]*domain.Post, error) {
+	query := `
+		SELECT DISTINCT p.id, p.title, p.content, p.user_id, p.created_at
+		FROM posts p`
+	var args []interface{}
+
+	if category != "" {
+		query += ` JOIN posts_categories pc ON p.id = pc.post_id
+		           JOIN categories c ON pc.category_id = c.id
+		           WHERE c.name = ?`
+		args = append(args, category)
+	}
+
+	if sortBy == "oldest" {
+		query += " ORDER BY p.created_at ASC"
+	} else {
+		query += " ORDER BY p.created_at DESC"
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,4 +139,71 @@ func (r *PostsRepo) GetUserReactionRepo(postID int64, userID int64) (int, error)
 		return 0, nil // Pas de réaction trouvée
 	}
 	return value, err
+}
+
+func (r *PostsRepo) CreatePostRepo(post *domain.Post) (int64, error) {
+	result, err := r.db.Exec(`INSERT INTO posts (title, content, user_id, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)`, post.Title, post.Content, post.UserID)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func (r *PostsRepo) AddCategoryToPostRepo(postID int64, categoryID int64) error {
+	_, err := r.db.Exec(`INSERT INTO posts_categories (post_id, category_id) VALUES (?, ?)`, postID, categoryID)
+	return err
+}
+
+func (r *PostsRepo) GetCategoryByNameRepo(name string) (int64, error) {
+	var id int64
+	err := r.db.QueryRow(`SELECT id FROM categories WHERE name = ?`, name).Scan(&id)
+	return id, err
+}
+
+func (r *PostsRepo) CreateCategoryRepo(name string) (int64, error) {
+	result, err := r.db.Exec(`INSERT INTO categories (name) VALUES (?)`, name)
+	if err != nil {
+		return 0, err
+	}
+	return result.LastInsertId()
+}
+
+func (r *PostsRepo) GetCategoriesByPostIDRepo(postID int64) ([]string, error) {
+	rows, err := r.db.Query(`
+		SELECT c.name 
+		FROM categories c
+		JOIN posts_categories pc ON c.id = pc.category_id
+		WHERE pc.post_id = ?`, postID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		categories = append(categories, name)
+	}
+	return categories, nil
+}
+
+func (r *PostsRepo) GetAllCategoriesRepo() ([]string, error) {
+	rows, err := r.db.Query(`SELECT name FROM categories ORDER BY name ASC`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		categories = append(categories, name)
+	}
+	return categories, nil
 }

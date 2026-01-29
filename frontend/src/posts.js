@@ -16,11 +16,18 @@ export function EventPosts() {
 }
 
 
-export function handlePosts() {
+export function handlePosts(sortBy = "recent", category = "") {
     // Vérifier si l'utilisateur est connecté
     const isLoggedIn = document.cookie.includes('session_token');
 
-    fetch("http://localhost:8086/api/posts")
+    let url = "http://localhost:8086/api/posts";
+    const params = new URLSearchParams();
+    if (sortBy) params.append("sort", sortBy);
+    if (category) params.append("category", category);
+
+    if (params.toString()) url += `?${params.toString()}`;
+
+    fetch(url)
         .then((response) => response.json())
         .then((data) => {
             const postsContainer = document.getElementById("postsContainer");
@@ -55,6 +62,17 @@ export function handlePosts() {
                 authorInfo.appendChild(dateElement);
                 postHeader.appendChild(avatarElement);
                 postHeader.appendChild(authorInfo);
+
+                // Categories
+                if (post.categories && post.categories.length > 0) {
+                    const categoriesElement = document.createElement("div");
+                    categoriesElement.className = "post-categories";
+                    categoriesElement.style.marginTop = "5px";
+                    categoriesElement.innerHTML = post.categories.map(cat =>
+                        `<span class="category-tag" style="display: inline-block; background: #e0e0e0; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; margin-right: 5px; color: #555;">${cat}</span>`
+                    ).join('');
+                    postHeader.appendChild(categoriesElement);
+                }
 
                 // Titre du post
                 const titleElement = document.createElement("h3");
