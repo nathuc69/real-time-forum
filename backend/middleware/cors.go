@@ -8,7 +8,8 @@ import (
 
 // allowOrigins whitelists frontend origins that may send credentials.
 var allowOrigins = map[string]bool{
-	"http://localhost:8000":  true,
+	"http://localhost:8086":  true,
+	"http://localhost:5500":  true,
 	"http://0.0.0.0:8000":    true,
 	"http://127.0.0.1:3000":  true,
 	"http://127.0.0.1:5500/": true,
