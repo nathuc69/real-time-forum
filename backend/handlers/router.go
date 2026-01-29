@@ -19,9 +19,7 @@ func Router(cs domain.ClientService, ps domain.PostsService, cts domain.Comments
 	mux.Handle("/api/register", middleware.CORS(http.HandlerFunc(RegisterHandler)))
 	mux.Handle("/api/check-auth", middleware.CORS(http.HandlerFunc(CheckAuthHandler)))
 	mux.Handle("/api/logout", middleware.CORS(http.HandlerFunc(LogoutHandler)))
-	
-	// Route pour tous les posts (authentification optionnelle pour récupérer les réactions de l'utilisateur)
-	mux.Handle("/api/posts", middleware.CORS(middleware.HandleAuthOptional(http.HandlerFunc(GetAllPostsHandler))))
+	mux.Handle("/api/posts", middleware.CORS(http.HandlerFunc(GetAllPostsHandler)))
 
 	// Routes protégées (authentification requise)
 	mux.Handle("/api/posts/{postId}/comments", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(NewCommentHandler))))
