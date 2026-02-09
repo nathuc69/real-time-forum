@@ -66,3 +66,7 @@ func (s *clientService) DeleteTokenService(token string) error {
 	}
 	return nil
 }
+
+func (s *clientService) GetAllUsers() ([]domain.User, error) {
+	return s.repo.GetAllUsers()
+}

@@ -1,5 +1,5 @@
 import { Router, navigateTo } from './router.js';
-import { renderHome, renderLogin, renderRegister, renderPostDetails } from './pages.js';
+import { renderHome, renderLogin, renderRegister, renderPostDetails, renderChat } from './pages.js';
 
 let isLoggedIn = false;
 let username = '';
@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         '/login': renderLogin,
         '/register': renderRegister,
         '/posts/:id': (params) => renderPostDetails(params, isLoggedIn, username),
+        '/chat': () => renderChat(isLoggedIn, username),
     };
 
     const router = new Router(routes);
@@ -71,6 +72,9 @@ document.addEventListener('click', (e) => {
     } else if (e.target.id === 'backBtn') {
         e.preventDefault();
         navigateTo('/');
+    } else if (e.target.id === 'chatBtn') {
+        e.preventDefault();
+        navigateTo('/chat');
     } else if (e.target.id === 'LogoutBtn') {
         e.preventDefault();
         const logoutPopup = document.getElementById("logoutPopup");

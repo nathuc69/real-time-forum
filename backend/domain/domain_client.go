@@ -19,6 +19,7 @@ type ClientRepository interface {
 	UpdateTokenRepo(username, email, token string) error
 	CheckTokenRepo(token string) (*User, bool)
 	DeleteTokenRepo(token string) error
+	GetAllUsers() ([]User, error)
 }
 
 type ClientService interface {
@@ -27,4 +28,5 @@ type ClientService interface {
 	UpdateTokenService(username, email, token string) error
 	CheckTokenService(token string) (*User, error)
 	DeleteTokenService(token string) error
+	GetAllUsers() ([]User, error)
 }

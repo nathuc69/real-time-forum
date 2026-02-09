@@ -33,7 +33,13 @@ func main() {
 	postsRepository := repositories.NewPostsRepository(db)
 	postsService := services.NewPostsService(postsRepository)
 
-	router := handlers.Router(clientService, postsService, commentsService)
+	messageRepository := repositories.NewMessageRepository(db)
+	messageService := services.NewMessageService(messageRepository)
+
+	// Initialiser le WebSocket Hub
+	handlers.InitWebSocketHub(messageService)
+
+	router := handlers.Router(clientService, postsService, commentsService, messageService)
 	addr := os.Getenv("SERVER_PORT")
 	//router := SetupRouter(db)
 

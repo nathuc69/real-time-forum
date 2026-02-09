@@ -39,7 +39,10 @@ export function renderHome(loggedIn, username) {
         <div id="MenuPage">
             <h1>Welcome to the Real-Time Forum, ${username}</h1>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <button id="createPostBtn" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Create Post</button>
+                <div style="display: flex; gap: 10px;">
+                    <button id="createPostBtn" style="padding: 10px 20px; background-color: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Create Post</button>
+                    <button id="chatBtn" style="padding: 10px 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">💬 Chat</button>
+                </div>
                 <button id="LogoutBtn">Logout</button>
             </div>
             
@@ -434,4 +437,336 @@ export function renderPostDetails(params, isLoggedIn = false, username = '') {
 
     // Appeler setupEventListeners pour gérer les événements de logout
     setupEventListeners();
+}
+
+export function renderChat(isLoggedIn, username) {
+    if (!isLoggedIn) {
+        renderLogin();
+        return;
+    }
+
+    document.body.innerHTML = `
+        <div id="chatPage" style="display: flex; height: 100vh; overflow: hidden;">
+            <!-- Sidebar avec la liste des utilisateurs -->
+            <div id="chatSidebar" style="width: 300px; background: #f5f5f5; border-right: 1px solid #ddd; display: flex; flex-direction: column;">
+                <div style="padding: 20px; background: #4CAF50; color: white;">
+                    <h2 style="margin: 0; font-size: 1.5em;">💬 Chat</h2>
+                    <p style="margin: 5px 0 0 0; font-size: 0.9em;">Welcome, ${username}</p>
+                </div>
+                
+                <div style="padding: 10px;">
+                    <button id="backToHomeBtn" style="width: 100%; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 10px;">
+                        ← Back to Home
+                    </button>
+                </div>
+
+                <div style="padding: 10px; border-bottom: 1px solid #ddd;">
+                    <input type="text" id="userSearch" placeholder="Search users..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                </div>
+
+                <div id="chatUsersList" style="flex: 1; overflow-y: auto; padding: 10px;">
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        Loading users...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zone de conversation -->
+            <div id="chatMain" style="flex: 1; display: flex; flex-direction: column; background: #fff;">
+                <div id="chatHeader" style="padding: 20px; background: #f9f9f9; border-bottom: 1px solid #ddd; display: none;">
+                    <h3 id="chatUsername" style="margin: 0; color: #333;"></h3>
+                    <p id="chatUserStatus" style="margin: 5px 0 0 0; font-size: 0.9em; color: #999;"></p>
+                </div>
+
+                <div id="messagesContainer" style="flex: 1; overflow-y: auto; padding: 20px; background: #fafafa;">
+                    <div style="text-align: center; padding: 40px; color: #999;">
+                        <h3>Select a user to start chatting</h3>
+                        <p>Choose someone from the list on the left</p>
+                    </div>
+                </div>
+
+                <div id="typingIndicator" style="padding: 10px 20px; color: #999; font-style: italic; display: none;">
+                    Someone is typing...
+                </div>
+
+                <div id="messageInputContainer" style="padding: 20px; background: #f9f9f9; border-top: 1px solid #ddd; display: none;">
+                    <div style="display: flex; gap: 10px;">
+                        <textarea id="messageInput" placeholder="Type your message..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; resize: none; font-family: inherit;" rows="2"></textarea>
+                        <button id="sendMessageBtn" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            Send
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Initialiser le WebSocket
+    const ws = window.initWebSocket();
+
+    // Variables pour suivre la conversation actuelle
+    let currentChatUserId = null;
+    let currentChatUsername = null;
+    let messageOffset = 0;
+    const messageLimit = 10;
+
+    // Charger la liste des utilisateurs
+    loadChatUsers();
+
+    // Gestionnaire de recherche d'utilisateurs
+    document.getElementById('userSearch').addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const userItems = document.querySelectorAll('.chat-user-item');
+        userItems.forEach(item => {
+            const username = item.querySelector('.chat-user-name').textContent.toLowerCase();
+            item.style.display = username.includes(searchTerm) ? 'flex' : 'none';
+        });
+    });
+
+    // Gestionnaire du bouton retour
+    document.getElementById('backToHomeBtn').addEventListener('click', () => {
+        if (window.wsClient) {
+            window.wsClient.disconnect();
+        }
+        window.location.hash = '#/';
+    });
+
+    // Gestionnaire d'envoi de message
+    document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        } else if (e.key !== 'Enter') {
+            // Envoyer l'indicateur de frappe
+            if (currentChatUserId) {
+                window.sendTypingIndicator(currentChatUserId);
+            }
+        }
+    });
+
+    // Fonction pour charger la liste des utilisateurs
+    function loadChatUsers() {
+        fetch('http://localhost:8086/api/users', {
+            credentials: 'include'
+        })
+            .then(res => res.json())
+            .then(users => {
+                const usersList = document.getElementById('chatUsersList');
+                usersList.innerHTML = '';
+
+                if (users.length === 0) {
+                    usersList.innerHTML = '<div style="text-align: center; padding: 20px; color: #999;">No users available</div>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const userItem = createUserItem(user);
+                    usersList.appendChild(userItem);
+                });
+            })
+            .catch(err => {
+                console.error('Error loading users:', err);
+                document.getElementById('chatUsersList').innerHTML = '<div style="text-align: center; padding: 20px; color: #f44336;">Error loading users</div>';
+            });
+    }
+
+    // Fonction pour créer un élément utilisateur
+    function createUserItem(user) {
+        const userItem = document.createElement('div');
+        userItem.className = 'chat-user-item';
+        userItem.setAttribute('data-user-id', user.id);
+        userItem.style.cssText = `
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            transition: background 0.2s;
+        `;
+
+        userItem.innerHTML = `
+            <div style="position: relative; margin-right: 12px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+                    ${user.username[0].toUpperCase()}
+                </div>
+                <div class="status-indicator ${user.isOnline ? 'online' : 'offline'}" style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #f5f5f5; background: ${user.isOnline ? '#4CAF50' : '#999'};"></div>
+            </div>
+            <div style="flex: 1;">
+                <div class="chat-user-name" style="font-weight: 500; color: #333;">${user.username}</div>
+                <div class="chat-user-status" style="font-size: 0.85em; color: #999;">${user.isOnline ? 'Online' : 'Offline'}</div>
+            </div>
+        `;
+
+        userItem.addEventListener('mouseenter', () => {
+            userItem.style.background = '#e8e8e8';
+        });
+
+        userItem.addEventListener('mouseleave', () => {
+            userItem.style.background = 'transparent';
+        });
+
+        userItem.addEventListener('click', () => {
+            openChat(user.id, user.username);
+        });
+
+        return userItem;
+    }
+
+    // Fonction pour ouvrir une conversation
+    function openChat(userId, username) {
+        currentChatUserId = userId;
+        currentChatUsername = username;
+        messageOffset = 0;
+
+        // Mettre à jour l'interface
+        document.getElementById('chatHeader').style.display = 'block';
+        document.getElementById('messageInputContainer').style.display = 'block';
+        document.getElementById('chatUsername').textContent = username;
+
+        // Charger la conversation
+        loadConversation(userId);
+
+        // Marquer les messages comme lus
+        window.markMessagesAsRead(userId);
+
+        // Mettre en surbrillance l'utilisateur sélectionné
+        document.querySelectorAll('.chat-user-item').forEach(item => {
+            item.style.background = 'transparent';
+        });
+        document.querySelector(`[data-user-id="${userId}"]`).style.background = '#e0f7fa';
+    }
+
+    // Fonction pour charger une conversation
+    function loadConversation(userId) {
+        fetch(`http://localhost:8086/api/chat/conversation?userId=${userId}&limit=${messageLimit}&offset=${messageOffset}`, {
+            credentials: 'include'
+        })
+            .then(res => res.json())
+            .then(messages => {
+                const container = document.getElementById('messagesContainer');
+                container.innerHTML = '';
+
+                if (messages.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No messages yet. Start the conversation!</div>';
+                    return;
+                }
+
+                messages.forEach(message => {
+                    addMessageToUI(message);
+                });
+
+                // Scroll vers le bas
+                container.scrollTop = container.scrollHeight;
+            })
+            .catch(err => {
+                console.error('Error loading conversation:', err);
+            });
+    }
+
+    // Fonction pour ajouter un message à l'UI
+    function addMessageToUI(message) {
+        const container = document.getElementById('messagesContainer');
+        const currentUserId = getCurrentUserId();
+        const isSent = message.senderId === currentUserId;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.style.cssText = `
+            display: flex;
+            justify-content: ${isSent ? 'flex-end' : 'flex-start'};
+            margin-bottom: 15px;
+        `;
+
+        messageDiv.innerHTML = `
+            <div style="max-width: 60%; padding: 10px 15px; border-radius: 18px; background: ${isSent ? '#4CAF50' : '#e0e0e0'}; color: ${isSent ? 'white' : '#333'};">
+                <p style="margin: 0; word-wrap: break-word;">${escapeHtml(message.content)}</p>
+                <span style="font-size: 0.75em; opacity: 0.8; margin-top: 5px; display: block;">
+                    ${formatTime(message.createdAt)}
+                </span>
+            </div>
+        `;
+
+        container.appendChild(messageDiv);
+    }
+
+    // Fonction pour envoyer un message
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const content = input.value.trim();
+
+        if (!content || !currentChatUserId) return;
+
+        window.sendChatMessage(currentChatUserId, content);
+        input.value = '';
+    }
+
+    // Fonction pour obtenir l'ID de l'utilisateur actuel
+    function getCurrentUserId() {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                return user.id;
+            } catch (e) {
+                console.error('Error parsing user data:', e);
+            }
+        }
+        return null;
+    }
+
+    // Fonctions utilitaires
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function formatTime(dateStr) {
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Écouter les nouveaux messages via WebSocket
+    if (ws) {
+        ws.on('chat_message', (message) => {
+            // Si le message concerne la conversation actuelle, l'ajouter
+            if (currentChatUserId &&
+                (message.senderId === currentChatUserId || message.receiverId === currentChatUserId)) {
+                addMessageToUI(message);
+
+                // Scroll vers le bas
+                const container = document.getElementById('messagesContainer');
+                container.scrollTop = container.scrollHeight;
+
+                // Marquer comme lu si c'est un message reçu
+                if (message.senderId === currentChatUserId) {
+                    window.markMessagesAsRead(currentChatUserId);
+                }
+            }
+        });
+
+        ws.on('user_status', (status) => {
+            // Mettre à jour le statut de l'utilisateur
+            const userItem = document.querySelector(`[data-user-id="${status.userId}"]`);
+            if (userItem) {
+                const statusIndicator = userItem.querySelector('.status-indicator');
+                const statusText = userItem.querySelector('.chat-user-status');
+
+                if (statusIndicator) {
+                    statusIndicator.className = `status-indicator ${status.isOnline ? 'online' : 'offline'}`;
+                    statusIndicator.style.background = status.isOnline ? '#4CAF50' : '#999';
+                }
+
+                if (statusText) {
+                    statusText.textContent = status.isOnline ? 'Online' : 'Offline';
+                }
+            }
+
+            // Mettre à jour le statut dans le header si c'est la conversation actuelle
+            if (currentChatUserId === status.userId) {
+                document.getElementById('chatUserStatus').textContent = status.isOnline ? '🟢 Online' : '⚫ Offline';
+            }
+        });
+    }
 }

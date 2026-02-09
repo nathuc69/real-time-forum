@@ -6,10 +6,11 @@ import (
 	"real-time-forum/backend/middleware"
 )
 
-func Router(cs domain.ClientService, ps domain.PostsService, cts domain.CommentsService) http.Handler {
+func Router(cs domain.ClientService, ps domain.PostsService, cts domain.CommentsService, ms domain.MessageService) http.Handler {
 	clientService = cs
 	postsService = ps
 	commentsService = cts
+
 	middleware.SetClientService(cs)
 
 	mux := http.NewServeMux()
@@ -22,9 +23,16 @@ func Router(cs domain.ClientService, ps domain.PostsService, cts domain.Comments
 	mux.Handle("/api/posts", middleware.CORS(http.HandlerFunc(GetAllPostsHandler)))
 	mux.Handle("/api/categories", middleware.CORS(http.HandlerFunc(GetAllCategoriesHandler)))
 
+	// Routes protégées (authentification requise)
 	mux.Handle("/api/posts/{postId}/comments", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(NewCommentHandler))))
 	mux.Handle("/api/posts/{postId}/reaction", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(ReactionHandler))))
 	mux.Handle("/api/posts/create", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(CreatePostHandler))))
+
+	// Routes WebSocket pour le chat
+	mux.Handle("/ws", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(WebSocketHandler))))
+	mux.Handle("/api/chat/users", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(GetChatUsersHandler))))
+	mux.Handle("/api/chat/conversation", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(GetConversationHandler))))
+	mux.Handle("/api/users", middleware.CORS(middleware.HandleAuth(http.HandlerFunc(GetAllUsersHandler))))
 
 	// Route pour un post spécifique (doit être après les routes plus spécifiques)
 	mux.Handle("/api/posts/", middleware.CORS(http.HandlerFunc(GetPostByIDHandler)))

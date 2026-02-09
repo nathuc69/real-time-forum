@@ -86,3 +86,22 @@ func (r *LogRepo) CreateClient(user *domain.User) error {
 	}
 	return nil
 }
+
+func (r *LogRepo) GetAllUsers() ([]domain.User, error) {
+	rows, err := r.db.Query(`SELECT id, username, email FROM users`)
+	if err != nil {
+		return nil, fmt.Errorf("❌ error querying users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []domain.User
+	for rows.Next() {
+		var user domain.User
+		if err := rows.Scan(&user.ID, &user.Username, &user.Email); err != nil {
+			return nil, fmt.Errorf("❌ error scanning user: %w", err)
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
+}
