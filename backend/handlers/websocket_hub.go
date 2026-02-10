@@ -282,17 +282,23 @@ func (c *Client) HandleMessage(message []byte) {
 
 // HandleChatMessage traite un message de chat
 func (c *Client) HandleChatMessage(payload interface{}) {
+	log.Printf("📨 HandleChatMessage called for client %s (ID: %d)", c.Username, c.ID)
+
 	data, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshaling chat message payload: %v", err)
 		return
 	}
 
+	log.Printf("📨 Payload data: %s", string(data))
+
 	var chatMsg ChatMessage
 	if err := json.Unmarshal(data, &chatMsg); err != nil {
 		log.Printf("Error unmarshaling chat message: %v", err)
 		return
 	}
+
+	log.Printf("📨 Chat message: from %d to %d, content: %s", chatMsg.SenderID, chatMsg.ReceiverID, chatMsg.Content)
 
 	// Vérifier que l'expéditeur est bien le client connecté
 	if chatMsg.SenderID != c.ID {
@@ -309,10 +315,12 @@ func (c *Client) HandleChatMessage(payload interface{}) {
 		IsRead:     false,
 	}
 
+	log.Printf("💾 Attempting to save message to database...")
 	if err := c.Hub.MessageService.SendMessage(msg); err != nil {
-		log.Printf("Error saving message: %v", err)
+		log.Printf("❌ Error saving message: %v", err)
 		return
 	}
+	log.Printf("✅ Message saved successfully with ID: %d", msg.ID)
 
 	// Ajouter le nom d'utilisateur au message
 	chatMsg.SenderUsername = c.Username
@@ -329,6 +337,8 @@ func (c *Client) HandleChatMessage(payload interface{}) {
 		log.Printf("Error marshaling response: %v", err)
 		return
 	}
+
+	log.Printf("📤 Sending message to receiver %d and sender %d", chatMsg.ReceiverID, chatMsg.SenderID)
 
 	// Envoyer le message au destinataire
 	c.Hub.SendToUser(chatMsg.ReceiverID, responseData)

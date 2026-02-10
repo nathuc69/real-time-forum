@@ -501,8 +501,14 @@ export function renderChat(isLoggedIn, username) {
         </div>
     `;
 
-    // Initialiser le WebSocket
-    const ws = window.initWebSocket();
+    // Initialiser le WebSocket seulement s'il n'existe pas déjà
+    let ws = window.wsClient;
+    if (!ws || ws.ws?.readyState !== WebSocket.OPEN) {
+        console.log('🔌 Initializing WebSocket connection...');
+        ws = window.initWebSocket();
+    } else {
+        console.log('✅ WebSocket already connected, reusing existing connection');
+    }
 
     // Variables pour suivre la conversation actuelle
     let currentChatUserId = null;
@@ -672,6 +678,7 @@ export function renderChat(isLoggedIn, username) {
         const isSent = message.senderId === currentUserId;
 
         const messageDiv = document.createElement('div');
+        messageDiv.className = isSent ? 'message sent' : 'message';
         messageDiv.style.cssText = `
             display: flex;
             justify-content: ${isSent ? 'flex-end' : 'flex-start'};
@@ -729,7 +736,12 @@ export function renderChat(isLoggedIn, username) {
 
     // Écouter les nouveaux messages via WebSocket
     if (ws) {
-        ws.on('chat_message', (message) => {
+        // Retirer les anciens listeners pour éviter les doublons
+        ws.off('chat_message', handleChatMessageEvent);
+        ws.off('user_status', handleUserStatusEvent);
+
+        // Définir les handlers comme fonctions nommées pour pouvoir les retirer
+        function handleChatMessageEvent(message) {
             // Si le message concerne la conversation actuelle, l'ajouter
             if (currentChatUserId &&
                 (message.senderId === currentChatUserId || message.receiverId === currentChatUserId)) {
@@ -737,16 +749,18 @@ export function renderChat(isLoggedIn, username) {
 
                 // Scroll vers le bas
                 const container = document.getElementById('messagesContainer');
-                container.scrollTop = container.scrollHeight;
+                if (container) {
+                    container.scrollTop = container.scrollHeight;
+                }
 
                 // Marquer comme lu si c'est un message reçu
                 if (message.senderId === currentChatUserId) {
                     window.markMessagesAsRead(currentChatUserId);
                 }
             }
-        });
+        }
 
-        ws.on('user_status', (status) => {
+        function handleUserStatusEvent(status) {
             // Mettre à jour le statut de l'utilisateur
             const userItem = document.querySelector(`[data-user-id="${status.userId}"]`);
             if (userItem) {
@@ -765,8 +779,15 @@ export function renderChat(isLoggedIn, username) {
 
             // Mettre à jour le statut dans le header si c'est la conversation actuelle
             if (currentChatUserId === status.userId) {
-                document.getElementById('chatUserStatus').textContent = status.isOnline ? '🟢 Online' : '⚫ Offline';
+                const statusEl = document.getElementById('chatUserStatus');
+                if (statusEl) {
+                    statusEl.textContent = status.isOnline ? '🟢 Online' : '⚫ Offline';
+                }
             }
-        });
+        }
+
+        // Ajouter les nouveaux listeners
+        ws.on('chat_message', handleChatMessageEvent);
+        ws.on('user_status', handleUserStatusEvent);
     }
 }

@@ -17,11 +17,21 @@ async function checkAuthentication() {
         if (data.authenticated) {
             console.log(':white_check_mark: Utilisateur connecté:', data.username);
             isLoggedIn = true;
-            username = data.username
+            username = data.username;
+
+            // Stocker les données utilisateur dans localStorage pour le chat
+            localStorage.setItem('user', JSON.stringify({
+                id: data.id,
+                username: data.username,
+                email: data.email
+            }));
+
             // L'utilisateur est connecté, rester sur la page actuelle ou rediriger vers home
             return true;
         } else {
             console.log(':x: Pas de session active');
+            // Nettoyer le localStorage
+            localStorage.removeItem('user');
             // Rediriger vers la page de login si pas sur une page publique
             const currentPath = window.location.hash.replace('#', '') || '/';
             // if (currentPath !== '/login' && currentPath !== '/register') {
@@ -48,17 +58,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     const router = new Router(routes);
-});
-
-// Re-check authentication and re-render on page load
-window.addEventListener('load', async () => {
-    await checkAuthentication();
-    // Force the router to re-render the current route
-    const currentPath = window.location.hash.replace('#', '') || '/';
-    window.location.hash = '#/temp';
-    setTimeout(() => {
-        window.location.hash = currentPath;
-    }, 0);
 });
 
 // Handle clicks on navigation buttons (event delegation)

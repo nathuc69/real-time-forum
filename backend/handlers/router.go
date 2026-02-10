@@ -37,6 +37,19 @@ func Router(cs domain.ClientService, ps domain.PostsService, cts domain.Comments
 	// Route pour un post spécifique (doit être après les routes plus spécifiques)
 	mux.Handle("/api/posts/", middleware.CORS(http.HandlerFunc(GetPostByIDHandler)))
 
+	// Servir les fichiers statiques du frontend
+	fs := http.FileServer(http.Dir("./frontend"))
+	mux.Handle("/frontend/", http.StripPrefix("/frontend/", fs))
+
+	// Rediriger la racine vers le frontend
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			http.Redirect(w, r, "/frontend/single.html", http.StatusSeeOther)
+		} else {
+			http.NotFound(w, r)
+		}
+	})
+
 	// Routes:
 	// mux.Handle("/thread", middleware.Handle(http.HandlerFunc(ThreadHandler)))
 	// mux.HandleFunc("/login", AuthenticateHandler)

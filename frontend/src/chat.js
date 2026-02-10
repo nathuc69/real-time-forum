@@ -11,13 +11,7 @@ class WebSocketClient {
     connect() {
         return new Promise((resolve, reject) => {
             try {
-                // Ajouter le token d'authentification
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    reject(new Error('No authentication token found'));
-                    return;
-                }
-
+                // Les cookies sont automatiquement envoyés avec la requête WebSocket
                 this.ws = new WebSocket(this.url);
 
                 this.ws.onopen = () => {
@@ -113,13 +107,14 @@ let wsClient = null;
 
 // Initialiser la connexion WebSocket
 function initWebSocket() {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        console.warn('No token found, cannot connect to WebSocket');
+    // Vérifier que l'utilisateur est connecté via localStorage
+    const user = localStorage.getItem('user');
+    if (!user) {
+        console.warn('No user found, cannot connect to WebSocket');
         return null;
     }
 
-    const wsUrl = `ws://localhost:8080/ws`;
+    const wsUrl = `ws://localhost:8086/ws`;
     wsClient = new WebSocketClient(wsUrl);
 
     // Écouter les événements
@@ -131,10 +126,10 @@ function initWebSocket() {
     // Connecter
     wsClient.connect()
         .then(() => {
-            console.log('WebSocket connected successfully');
+            console.log('✅ WebSocket connected successfully');
         })
         .catch(err => {
-            console.error('Failed to connect to WebSocket:', err);
+            console.error('❌ Failed to connect to WebSocket:', err);
         });
 
     return wsClient;

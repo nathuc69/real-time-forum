@@ -1,3 +1,19 @@
+/* ============================================
+   RETRO TERMINAL THEME - CRT Style
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
+
+:root {
+    --terminal-green: #00ff41;
+    --terminal-green-dim: #00cc33;
+    --terminal-green-dark: #008822;
+    --terminal-bg: #0a0e0a;
+    --terminal-bg-light: #0f140f;
+    --screen-glow: rgba(0, 255, 65, 0.1);
+    --cursor-blink: #00ff41;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,221 +21,234 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    font-family: 'VT323', monospace;
+    background: var(--terminal-bg);
+    color: var(--terminal-green);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
+    overflow-x: hidden;
+    position: relative;
+    letter-spacing: 1px;
 }
 
+/* CRT Screen Effect */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 9999;
+    pointer-events: none;
+    animation: scanline 8s linear infinite;
+}
+
+/* Scanline animation */
+@keyframes scanline {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100%; }
+}
+
+/* Screen flicker */
+@keyframes flicker {
+    0% { opacity: 0.97; }
+    5% { opacity: 1; }
+    10% { opacity: 0.97; }
+    15% { opacity: 1; }
+    20% { opacity: 0.97; }
+    100% { opacity: 0.97; }
+}
+
+body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(18, 16, 16, 0.1);
+    opacity: 0;
+    z-index: 9998;
+    pointer-events: none;
+    animation: flicker 0.15s infinite;
+}
+
+/* Screen glow effect */
+#MenuPage,
+#loginMenu,
+#postDetailsPage,
+#chatPage {
+    text-shadow: 0 0 5px var(--screen-glow), 0 0 10px var(--screen-glow);
+}
+
+/* ============================================
+   MAIN MENU PAGE
+   ============================================ */
+
 #MenuPage {
-    text-align: center;
-    color: white;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 20px;
 }
 
 #MenuPage h1 {
+    font-size: 3.5rem;
+    text-align: center;
     margin-bottom: 30px;
-    font-size: 2.5rem;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-transform: uppercase;
+    border: 3px solid var(--terminal-green);
+    padding: 20px;
+    background: rgba(0, 255, 65, 0.05);
+    box-shadow: 
+        0 0 10px var(--terminal-green),
+        inset 0 0 10px var(--terminal-green);
+    animation: glow 2s ease-in-out infinite alternate;
 }
 
-#loginBtn {
-    background: white;
-    color: #667eea;
-    border: none;
+@keyframes glow {
+    from {
+        box-shadow: 
+            0 0 5px var(--terminal-green),
+            inset 0 0 5px var(--terminal-green);
+    }
+    to {
+        box-shadow: 
+            0 0 20px var(--terminal-green),
+            inset 0 0 10px var(--terminal-green);
+    }
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+
+button {
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    background: transparent;
+    color: var(--terminal-green);
+    border: 2px solid var(--terminal-green);
     padding: 12px 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 25px;
     cursor: pointer;
+    text-transform: uppercase;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+    letter-spacing: 2px;
 }
 
-#loginBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: var(--terminal-green);
+    transition: left 0.3s ease;
+    z-index: -1;
 }
 
-#loginBtn:active {
-    transform: translateY(0);
+button:hover::before {
+    left: 0;
 }
 
-#LogoutBtn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-    color: white;
-    border: none;
-    padding: 12px 30px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 25px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+button:hover {
+    color: var(--terminal-bg);
+    box-shadow: 0 0 20px var(--terminal-green);
+    transform: scale(1.05);
 }
 
-#LogoutBtn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(255, 107, 107, 0.4);
+button:active {
+    transform: scale(0.98);
 }
 
-#LogoutBtn:active {
-    transform: translateY(0);
+#loginBtn,
+#registerBtn,
+#backBtn,
+#LogoutBtn,
+#createPostBtn,
+#chatBtn {
+    margin: 10px;
 }
+
+/* ============================================
+   LOGIN/REGISTER FORMS
+   ============================================ */
 
 #loginMenu {
-    display: none;
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: var(--terminal-bg);
+    border: 3px solid var(--terminal-green);
     padding: 40px;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    min-width: 400px;
+    box-shadow: 
+        0 0 30px var(--terminal-green),
+        inset 0 0 30px rgba(0, 255, 65, 0.1);
     z-index: 1000;
-    min-width: 350px;
 }
 
-#loginForm {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-#loginForm label {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: -10px;
-}
-
-#loginForm input[type="text"],
-#loginForm input[type="password"] {
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-}
-
-#loginForm input[type="text"]:focus,
-#loginForm input[type="password"]:focus {
-    outline: none;
-    border-color: #667eea;
-}
-
-#loginForm button[type="submit"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 10px;
-}
-
-#loginForm button[type="submit"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-#registerBtn {
-    background: transparent;
-    color: #667eea;
-    border: 2px solid #667eea;
-    padding: 10px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-#registerBtn:hover {
-    background: #667eea;
-    color: white;
-}
-
+#loginForm,
 #registerForm {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 20px;
 }
 
+#loginForm h2,
 #registerForm h2 {
-    margin-bottom: 4px;
-    color: #333;
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--terminal-green);
+    padding-bottom: 10px;
 }
 
+#loginForm label,
 #registerForm label {
-    font-weight: 600;
-    color: #333;
-    margin-bottom: -6px;
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    margin-bottom: -15px;
 }
 
-#registerForm input[type="text"],
-#registerForm input[type="email"],
-#registerForm input[type="number"],
-#registerForm input[type="password"],
+#loginForm input,
+#registerForm input,
 #registerForm select {
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    background: var(--terminal-bg-light);
+    color: var(--terminal-green);
+    border: 2px solid var(--terminal-green-dim);
+    padding: 10px;
+    transition: all 0.3s ease;
 }
 
+#loginForm input:focus,
 #registerForm input:focus,
 #registerForm select:focus {
     outline: none;
-    border-color: #667eea;
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 10px var(--screen-glow);
 }
 
-#registerForm button[type="submit"] {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border: none;
-    padding: 12px;
-    font-size: 1.05rem;
-    font-weight: 700;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 6px;
+/* Cursor blink effect for inputs */
+#loginForm input::placeholder,
+#registerForm input::placeholder {
+    color: var(--terminal-green-dark);
 }
 
-#registerForm button[type="submit"]:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-#backBtn {
-    background: white;
-    color: #667eea;
-    border: 2px solid #e0e0e0;
-    padding: 10px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-#backBtn:hover {
-    border-color: #667eea;
-    color: #667eea;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
-}
-
-body.blurred {
-    filter: blur(5px);
-    pointer-events: none;
-}
+/* ============================================
+   LOGOUT POPUP
+   ============================================ */
 
 #logoutOverlay {
     display: none;
@@ -228,9 +257,8 @@ body.blurred {
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.8);
     z-index: 1999;
-    pointer-events: all;
 }
 
 #logoutPopup {
@@ -239,81 +267,42 @@ body.blurred {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: white;
+    background: var(--terminal-bg);
+    border: 3px solid var(--terminal-green);
     padding: 50px 40px;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    z-index: 2000;
     min-width: 400px;
     text-align: center;
-    pointer-events: all;
-    animation: slideIn 0.3s ease-out;
+    z-index: 2000;
+    box-shadow: 0 0 30px var(--terminal-green);
+    animation: terminalBoot 0.5s ease-out;
 }
 
-@keyframes slideIn {
-    from {
-        transform: translate(-50%, -60%);
+@keyframes terminalBoot {
+    0% {
         opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
     }
-
-    to {
-        transform: translate(-50%, -50%);
+    50% {
+        opacity: 0.5;
+    }
+    100% {
         opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
     }
 }
 
 #logoutPopup h3 {
-    color: #333;
+    font-size: 2rem;
     margin-bottom: 30px;
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-
-#logoutPopup button {
-    padding: 12px 35px;
-    margin: 0 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 10px;
-    border: none;
-    cursor: pointer;
-    transition: all 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
-#SubmitLogoutBtn {
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-    color: white;
-}
+/* ============================================
+   POSTS CONTAINER
+   ============================================ */
 
-#SubmitLogoutBtn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.4);
-}
-
-#SubmitLogoutBtn:active {
-    transform: translateY(-1px);
-}
-
-#cancelLogoutBtn {
-    background: #e8e8e8;
-    color: #333;
-}
-
-#cancelLogoutBtn:hover {
-    background: #d0d0d0;
-    transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-}
-
-#cancelLogoutBtn:active {
-    transform: translateY(-1px);
-}
-
-/* Posts Container */
 #postsContainer {
-    max-width: 900px;
+    max-width: 1000px;
     margin: 40px auto;
     display: flex;
     flex-direction: column;
@@ -321,317 +310,573 @@ body.blurred {
     padding: 20px;
 }
 
-/* Post Card Styles */
 .post-card {
-    background: white;
-    border-radius: 12px;
+    background: var(--terminal-bg-light);
+    border: 2px solid var(--terminal-green-dim);
     padding: 20px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
     transition: all 0.3s ease;
-    border: 2px solid transparent;
+    position: relative;
+}
+
+.post-card::before {
+    content: '>';
+    position: absolute;
+    left: -30px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2rem;
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
 .post-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
-    border-color: #667eea;
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 20px var(--screen-glow);
+    transform: translateX(10px);
+}
+
+.post-card:hover::before {
+    opacity: 1;
+    left: -20px;
 }
 
 .post-header {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 15px;
     margin-bottom: 15px;
+    border-bottom: 1px solid var(--terminal-green-dark);
+    padding-bottom: 10px;
 }
 
 .post-avatar {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--terminal-green);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 700;
-    font-size: 1.2rem;
-    flex-shrink: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: var(--terminal-bg);
 }
 
 .post-author-info {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .post-author {
-    font-weight: 600;
-    color: #333;
-    font-size: 1rem;
+    font-size: 1.3rem;
+    text-transform: uppercase;
 }
 
 .post-date {
-    font-size: 0.85rem;
-    color: #888;
+    font-size: 1rem;
+    color: var(--terminal-green-dim);
 }
 
 .post-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 12px;
-    line-height: 1.3;
+    font-size: 2rem;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    color: var(--terminal-green);
 }
 
 .post-content {
-    color: #555;
+    font-size: 1.2rem;
     line-height: 1.6;
     margin-bottom: 15px;
-    font-size: 0.95rem;
+    color: var(--terminal-green-dim);
 }
 
 .post-footer {
     display: flex;
     gap: 20px;
-    padding-top: 12px;
-    border-top: 1px solid #f0f0f0;
+    padding-top: 15px;
+    border-top: 1px solid var(--terminal-green-dark);
+    font-size: 1.2rem;
 }
 
 .post-stat {
-    font-size: 0.9rem;
-    color: #888;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-    #postsContainer {
-        padding: 10px;
-    }
+/* ============================================
+   POST DETAILS PAGE
+   ============================================ */
 
-    .post-card {
-        padding: 15px;
-    }
-
-    .post-title {
-        font-size: 1.2rem;
-    }
-}
-
-/* Post Details Page */
 #postDetailsPage {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--terminal-bg);
     min-height: 100vh;
     padding: 20px;
 }
 
 .post-detail {
-    background: white;
-    border-radius: 12px;
+    background: var(--terminal-bg-light);
+    border: 3px solid var(--terminal-green);
     padding: 40px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 1000px;
+    margin: 0 auto;
+    box-shadow: 0 0 30px var(--screen-glow);
 }
 
 .post-detail-title {
-    font-size: 2rem;
-    font-weight: 700;
-    color: #333;
+    font-size: 2.5rem;
     margin: 20px 0;
-    line-height: 1.3;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--terminal-green);
+    padding-bottom: 15px;
 }
 
 .post-detail-content {
-    color: #555;
+    font-size: 1.3rem;
     line-height: 1.8;
-    font-size: 1.05rem;
     margin: 30px 0;
     white-space: pre-wrap;
 }
 
-.post-detail .post-header {
-    margin-bottom: 20px;
+/* Comments */
+.comment {
+    background: var(--terminal-bg) !important;
+    border: 2px solid var(--terminal-green-dim) !important;
+    border-left: 4px solid var(--terminal-green) !important;
+    padding: 15px !important;
+    margin-bottom: 15px !important;
+    box-shadow: none !important;
 }
 
-.post-detail .post-footer {
-    margin-top: 30px;
+.comment:hover {
+    border-color: var(--terminal-green) !important;
+    box-shadow: 0 0 15px var(--screen-glow) !important;
 }
 
-/* Vote Buttons */
+.comment-header strong {
+    color: var(--terminal-green) !important;
+    font-size: 1.3rem !important;
+}
+
+.comment-header span {
+    color: var(--terminal-green-dim) !important;
+}
+
+.comment-content {
+    color: var(--terminal-green-dim) !important;
+    font-size: 1.2rem !important;
+}
+
+/* ============================================
+   REACTIONS/VOTES
+   ============================================ */
+
+.reaction-container,
 .post-actions {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     align-items: center;
-    margin-right: auto;
-    /* Push comments to the right if needed, or just keep them together */
 }
 
+.reaction-btn,
 .btn-vote {
-    background: #f8f9fa;
-    border: 1px solid #e0e0e0;
-    padding: 6px 12px;
-    border-radius: 20px;
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    background: var(--terminal-bg);
+    color: var(--terminal-green);
+    border: 2px solid var(--terminal-green-dim);
+    padding: 8px 16px;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.9rem;
-    transition: all 0.2s;
-    z-index: 10;
-    /* Ensure it's above card link if implemented via overlay, though stopPropagation is better */
-}
-
-.btn-vote:hover {
-    background: #f0f0f0;
-    transform: translateY(-1px);
-}
-
-.btn-vote.active {
-    background: #e6f0ff;
-    border-color: #667eea;
-    color: #667eea;
-}
-
-.btn-vote.active.dislike-btn {
-    background: #ffe6e6;
-    border-color: #ff6b6b;
-    color: #ff6b6b;
-}
-
-.post-stat {
-    margin-left: auto;
-    /* Push stats to the right */
-}
-
-/* Reaction Buttons Styles */
-.reaction-container {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-}
-
-.reaction-btn {
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    border: 2px solid #e0e0e0;
-    background: white;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #666;
 }
 
-.reaction-btn:not(:disabled):hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+.reaction-btn:hover,
+.btn-vote:hover {
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 15px var(--screen-glow);
+    transform: scale(1.05);
 }
 
-.reaction-btn:disabled {
+.reaction-btn.active.like-btn,
+.btn-vote.active {
+    background: var(--terminal-green);
+    color: var(--terminal-bg);
+    box-shadow: 0 0 20px var(--terminal-green);
+}
+
+.reaction-btn.active.dislike-btn,
+.btn-vote.active.dislike-btn {
+    background: #ff0000;
+    border-color: #ff0000;
+    color: var(--terminal-bg);
+    box-shadow: 0 0 20px #ff0000;
+}
+
+.reaction-btn:disabled,
+.btn-vote:disabled {
+    opacity: 0.5;
     cursor: not-allowed;
-    opacity: 0.6;
 }
 
-.reaction-btn.like-btn:not(:disabled):hover {
-    border-color: #4CAF50;
-    background: #f1f8f4;
-    color: #4CAF50;
-}
+/* ============================================
+   CATEGORIES
+   ============================================ */
 
-.reaction-btn.dislike-btn:not(:disabled):hover {
-    border-color: #ff6b6b;
-    background: #fff5f5;
-    color: #ff6b6b;
-}
-
-.reaction-btn.active.like-btn {
-    border-color: #4CAF50;
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-}
-
-.reaction-btn.active.dislike-btn {
-    border-color: #ff6b6b;
-    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
-    color: white;
-    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
-
-.reaction-icon {
-    font-size: 1.2rem;
-    display: inline-block;
-    transition: transform 0.3s ease;
-}
-
-.reaction-btn:not(:disabled):hover .reaction-icon {
-    transform: scale(1.2);
-}
-
-.reaction-count {
-    font-weight: 700;
-    min-width: 20px;
-    text-align: center;
-}
-
-/* Animation de pulse lors du clic */
-@keyframes reactionPulse {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.15);
-    }
-
-    100% {
-        transform: scale(1);
-    }
-}
-
-.reaction-pulse {
-    animation: reactionPulse 0.6s ease;
-}
-
-/* Responsive pour les réactions */
-@media (max-width: 768px) {
-    .reaction-btn {
-        padding: 6px 12px;
-        font-size: 0.85rem;
-    }
-
-    .reaction-icon {
-        font-size: 1rem;
-    }
-}
-/* Categories */
 .post-categories {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .category-tag {
-    background-color: #f0f2f5;
-    color: #667eea;
-    padding: 4px 12px;
-    border-radius: 15px;
-    font-size: 0.85rem;
-    font-weight: 600;
+    background: var(--terminal-bg);
+    color: var(--terminal-green);
+    border: 1px solid var(--terminal-green-dim);
+    padding: 5px 15px;
+    font-size: 1.1rem;
     cursor: pointer;
-    transition: all 0.2s;
-    border: 1px solid transparent;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
 }
 
 .category-tag:hover {
-    background-color: #667eea;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+    background: var(--terminal-green);
+    color: var(--terminal-bg);
+    box-shadow: 0 0 10px var(--terminal-green);
+}
+
+/* ============================================
+   CHAT PAGE
+   ============================================ */
+
+#chatPage {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--terminal-bg);
+}
+
+#chatSidebar {
+    width: 350px;
+    background: var(--terminal-bg-light);
+    border-right: 3px solid var(--terminal-green);
+    display: flex;
+    flex-direction: column;
+}
+
+#chatSidebar > div:first-child {
+    background: var(--terminal-bg) !important;
+    border-bottom: 2px solid var(--terminal-green);
+    padding: 20px !important;
+}
+
+#chatSidebar h2 {
+    font-size: 2.5rem;
+    text-transform: uppercase;
+}
+
+#chatSidebar p {
+    font-size: 1.2rem;
+    color: var(--terminal-green-dim);
+}
+
+#userSearch {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    background: var(--terminal-bg);
+    color: var(--terminal-green);
+    border: 2px solid var(--terminal-green-dim);
+    padding: 10px;
+    width: 100%;
+}
+
+#userSearch:focus {
+    outline: none;
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 10px var(--screen-glow);
+}
+
+.chat-user-item {
+    background: var(--terminal-bg) !important;
+    border: 2px solid var(--terminal-green-dim) !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.chat-user-item:hover {
+    border-color: var(--terminal-green) !important;
+    background: var(--terminal-bg-light) !important;
+    box-shadow: 0 0 15px var(--screen-glow) !important;
+}
+
+.chat-user-item > div:first-child > div:first-child {
+    background: var(--terminal-bg) !important;
+    border: 2px solid var(--terminal-green) !important;
+    color: var(--terminal-green) !important;
+}
+
+.chat-user-name {
+    color: var(--terminal-green) !important;
+    font-size: 1.3rem !important;
+    text-transform: uppercase;
+}
+
+.chat-user-status {
+    color: var(--terminal-green-dim) !important;
+    font-size: 1.1rem !important;
+}
+
+.status-indicator.online {
+    background: var(--terminal-green) !important;
+    box-shadow: 0 0 10px var(--terminal-green) !important;
+}
+
+.status-indicator.offline {
+    background: var(--terminal-green-dark) !important;
+}
+
+#chatMain {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--terminal-bg);
+}
+
+#chatHeader {
+    background: var(--terminal-bg-light) !important;
+    border-bottom: 2px solid var(--terminal-green) !important;
+    padding: 20px !important;
+}
+
+#chatUsername {
+    font-size: 2rem !important;
+    text-transform: uppercase;
+    color: var(--terminal-green) !important;
+}
+
+#chatUserStatus {
+    font-size: 1.2rem !important;
+    color: var(--terminal-green-dim) !important;
+}
+
+#messagesContainer {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--terminal-bg) !important;
+}
+
+/* Custom scrollbar */
+#messagesContainer::-webkit-scrollbar,
+#chatUsersList::-webkit-scrollbar {
+    width: 10px;
+}
+
+#messagesContainer::-webkit-scrollbar-track,
+#chatUsersList::-webkit-scrollbar-track {
+    background: var(--terminal-bg);
+}
+
+#messagesContainer::-webkit-scrollbar-thumb,
+#chatUsersList::-webkit-scrollbar-thumb {
+    background: var(--terminal-green-dim);
+    border: 1px solid var(--terminal-green);
+}
+
+#messagesContainer::-webkit-scrollbar-thumb:hover,
+#chatUsersList::-webkit-scrollbar-thumb:hover {
+    background: var(--terminal-green);
+}
+
+/* Messages */
+.message {
+    margin-bottom: 15px;
+}
+
+.message > div {
+    background: var(--terminal-bg-light) !important;
+    border: 2px solid var(--terminal-green-dim) !important;
+    padding: 10px 15px !important;
+    border-radius: 0 !important;
+    font-size: 1.2rem !important;
+}
+
+.message.sent > div {
+    background: var(--terminal-green) !important;
+    color: var(--terminal-bg) !important;
+    border-color: var(--terminal-green) !important;
+}
+
+#typingIndicator {
+    padding: 10px 20px;
+    color: var(--terminal-green-dim) !important;
+    font-size: 1.2rem;
+    font-style: italic;
+}
+
+#messageInputContainer {
+    background: var(--terminal-bg-light) !important;
+    border-top: 2px solid var(--terminal-green) !important;
+    padding: 20px !important;
+}
+
+#messageInput {
+    font-family: 'VT323', monospace !important;
+    font-size: 1.3rem !important;
+    background: var(--terminal-bg) !important;
+    color: var(--terminal-green) !important;
+    border: 2px solid var(--terminal-green-dim) !important;
+    padding: 10px !important;
+    resize: none !important;
+}
+
+#messageInput:focus {
+    outline: none !important;
+    border-color: var(--terminal-green) !important;
+    box-shadow: 0 0 10px var(--screen-glow) !important;
+}
+
+#sendMessageBtn {
+    background: var(--terminal-green) !important;
+    color: var(--terminal-bg) !important;
+    border: 2px solid var(--terminal-green) !important;
+    padding: 10px 20px !important;
+    font-size: 1.5rem !important;
+}
+
+#sendMessageBtn:hover {
+    box-shadow: 0 0 20px var(--terminal-green) !important;
+}
+
+/* ============================================
+   FILTERS
+   ============================================ */
+
+.filters select,
+.filters button {
+    font-family: 'VT323', monospace;
+    font-size: 1.3rem;
+    background: var(--terminal-bg);
+    color: var(--terminal-green);
+    border: 2px solid var(--terminal-green-dim);
+    padding: 10px 20px;
+}
+
+.filters select:focus {
+    outline: none;
+    border-color: var(--terminal-green);
+    box-shadow: 0 0 10px var(--screen-glow);
+}
+
+/* ============================================
+   FORM ELEMENTS (Create Post, Comments)
+   ============================================ */
+
+#createPostForm,
+#commentForm {
+    background: var(--terminal-bg-light) !important;
+    border: 2px solid var(--terminal-green) !important;
+    padding: 20px !important;
+    box-shadow: 0 0 20px var(--screen-glow) !important;
+}
+
+#createPostForm h3 {
+    font-size: 2rem !important;
+    text-transform: uppercase;
+    color: var(--terminal-green) !important;
+    border-bottom: 2px solid var(--terminal-green);
+    padding-bottom: 10px;
+    margin-bottom: 20px !important;
+}
+
+#createPostForm input,
+#createPostForm textarea,
+#commentContent {
+    font-family: 'VT323', monospace !important;
+    font-size: 1.3rem !important;
+    background: var(--terminal-bg) !important;
+    color: var(--terminal-green) !important;
+    border: 2px solid var(--terminal-green-dim) !important;
+    padding: 10px !important;
+}
+
+#createPostForm input:focus,
+#createPostForm textarea:focus,
+#commentContent:focus {
+    outline: none !important;
+    border-color: var(--terminal-green) !important;
+    box-shadow: 0 0 10px var(--screen-glow) !important;
+}
+
+#createPostForm label {
+    font-size: 1.3rem !important;
+    color: var(--terminal-green) !important;
+    text-transform: uppercase;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    #MenuPage h1 {
+        font-size: 2.5rem;
+    }
+    
+    #chatSidebar {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .post-title {
+        font-size: 1.5rem;
+    }
+    
+    button {
+        font-size: 1.2rem;
+        padding: 10px 20px;
+    }
+}
+
+/* ============================================
+   CURSOR BLINK ANIMATION
+   ============================================ */
+
+@keyframes blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+}
+
+.cursor-blink::after {
+    content: '█';
+    animation: blink 1s infinite;
+    margin-left: 5px;
+}
+
+/* ============================================
+   BOOT SEQUENCE (Optional loading animation)
+   ============================================ */
+
+@keyframes bootSequence {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+body {
+    animation: bootSequence 1s ease-in;
 }
