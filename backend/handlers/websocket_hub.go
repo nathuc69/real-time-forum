@@ -118,12 +118,12 @@ func (h *Hub) SendToUser(userID int64, message []byte) {
 	if ok {
 		select {
 		case client.Send <- message:
+			// Message envoyé avec succès
 		default:
-			// Le canal est plein, fermer la connexion
-			h.mu.Lock()
-			close(client.Send)
-			delete(h.Clients, userID)
-			h.mu.Unlock()
+			// Le canal est plein : ne pas fermer la connexion pour éviter de couper
+			// la connexion de l'expéditeur lui-même pendant HandleChatMessage.
+			// On laisse juste tomber le message et on logge un avertissement.
+			log.Printf("⚠️ Send channel full for user %d, dropping message", userID)
 		}
 	}
 }
@@ -148,17 +148,23 @@ func (h *Hub) BroadcastUserStatus(userID int64, username string, isOnline bool) 
 		return
 	}
 
+	// Collecter les clients à notifier sous RLock (lecture seule)
 	h.mu.RLock()
-	defer h.mu.RUnlock()
-
+	targets := make([]*Client, 0)
 	for id, client := range h.Clients {
-		if id != userID { // Ne pas envoyer à l'utilisateur lui-même
-			select {
-			case client.Send <- data:
-			default:
-				close(client.Send)
-				delete(h.Clients, id)
-			}
+		if id != userID {
+			targets = append(targets, client)
+		}
+	}
+	h.mu.RUnlock()
+
+	// Envoyer sans tenir le lock (évite deadlock et data race)
+	for _, client := range targets {
+		select {
+		case client.Send <- data:
+		default:
+			// Canal plein, on logue sans fermer la connexion
+			log.Printf("⚠️ Send channel full for client %s, dropping status update", client.Username)
 		}
 	}
 }

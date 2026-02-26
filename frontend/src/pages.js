@@ -736,11 +736,13 @@ export function renderChat(isLoggedIn, username) {
 
     // Écouter les nouveaux messages via WebSocket
     if (ws) {
-        // Retirer les anciens listeners pour éviter les doublons
-        ws.off('chat_message', handleChatMessageEvent);
-        ws.off('user_status', handleUserStatusEvent);
+        // Retirer les ANCIENS listeners s'ils existent (évite les doublons à chaque renderChat)
+        if (window._chatHandlers) {
+            ws.off('chat_message', window._chatHandlers.onMessage);
+            ws.off('user_status', window._chatHandlers.onStatus);
+        }
 
-        // Définir les handlers comme fonctions nommées pour pouvoir les retirer
+        // Définir les handlers
         function handleChatMessageEvent(message) {
             // Si le message concerne la conversation actuelle, l'ajouter
             if (currentChatUserId &&
@@ -761,7 +763,7 @@ export function renderChat(isLoggedIn, username) {
         }
 
         function handleUserStatusEvent(status) {
-            // Mettre à jour le statut de l'utilisateur
+            // Mettre à jour le statut dans la liste sans re-render
             const userItem = document.querySelector(`[data-user-id="${status.userId}"]`);
             if (userItem) {
                 const statusIndicator = userItem.querySelector('.status-indicator');
@@ -777,7 +779,7 @@ export function renderChat(isLoggedIn, username) {
                 }
             }
 
-            // Mettre à jour le statut dans le header si c'est la conversation actuelle
+            // Mettre à jour le header si c'est la conversation actuelle
             if (currentChatUserId === status.userId) {
                 const statusEl = document.getElementById('chatUserStatus');
                 if (statusEl) {
@@ -785,6 +787,12 @@ export function renderChat(isLoggedIn, username) {
                 }
             }
         }
+
+        // Sauvegarder les références pour pouvoir les retirer au prochain appel de renderChat
+        window._chatHandlers = {
+            onMessage: handleChatMessageEvent,
+            onStatus: handleUserStatusEvent
+        };
 
         // Ajouter les nouveaux listeners
         ws.on('chat_message', handleChatMessageEvent);

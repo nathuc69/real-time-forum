@@ -117,16 +117,21 @@ function initWebSocket() {
     const wsUrl = `ws://localhost:8086/ws`;
     wsClient = new WebSocketClient(wsUrl);
 
-    // Écouter les événements
+    // Mettre à jour window.wsClient immédiatement pour que pages.js puisse le réutiliser
+    window.wsClient = wsClient;
+
+    // Seul online_users et typing sont gérés ici.
+    // chat_message et user_status sont gérés par pages.js (renderChat)
+    // pour éviter les doublons et garder le contexte de la conversation ouverte.
     wsClient.on('online_users', handleOnlineUsers);
-    wsClient.on('user_status', handleUserStatus);
-    wsClient.on('chat_message', handleChatMessage);
     wsClient.on('typing', handleTyping);
 
     // Connecter
     wsClient.connect()
         .then(() => {
             console.log('✅ WebSocket connected successfully');
+            // S'assurer que window.wsClient est toujours à jour (ex: après reconnexion)
+            window.wsClient = wsClient;
         })
         .catch(err => {
             console.error('❌ Failed to connect to WebSocket:', err);
