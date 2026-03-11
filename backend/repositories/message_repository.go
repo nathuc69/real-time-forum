@@ -120,7 +120,7 @@ func (r *MessageRepo) GetChatUsers(userID int64) ([]domain.ChatUser, error) {
 		ORDER BY lm.last_message_at IS NULL, lm.last_message_at DESC, u.username ASC
 	`
 
-	rows, err := r.db.Query(query, userID, userID, userID)
+	rows, err := r.db.Query(query, userID, userID, userID, userID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying chat users: %w", err)
 	}

@@ -3,9 +3,6 @@ package config
 import (
 	"database/sql"
 
-	//"forum/internal/repositories"
-	"os"
-
 	"log"
 	"real-time-forum/backend/repositories"
 
@@ -14,7 +11,7 @@ import (
 
 func InitDB() *sql.DB {
 	//connexion à la BdD:
-	dbPath := os.Getenv("FORUM_DB_PATH")
+	dbPath := "DB/forum.db"
 	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		log.Fatal("❌ error opening database:", err)
