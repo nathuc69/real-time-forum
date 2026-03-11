@@ -47,12 +47,12 @@ type WSMessage struct {
 	Timestamp time.Time   `json:"timestamp"`
 }
 
-// ChatMessage représente un message de chat
 type ChatMessage struct {
-	SenderID       int64  `json:"senderId"`
-	ReceiverID     int64  `json:"receiverId"`
-	Content        string `json:"content"`
-	SenderUsername string `json:"senderUsername,omitempty"`
+	SenderID       int64     `json:"senderId"`
+	ReceiverID     int64     `json:"receiverId"`
+	Content        string    `json:"content"`
+	SenderUsername string    `json:"senderUsername,omitempty"`
+	CreatedAt      time.Time `json:"createdAt"`
 }
 
 // UserStatus représente le statut d'un utilisateur
@@ -328,8 +328,9 @@ func (c *Client) HandleChatMessage(payload interface{}) {
 	}
 	log.Printf("✅ Message saved successfully with ID: %d", msg.ID)
 
-	// Ajouter le nom d'utilisateur au message
+	// Ajouter le nom d'utilisateur au message et la date
 	chatMsg.SenderUsername = c.Username
+	chatMsg.CreatedAt = msg.CreatedAt
 
 	// Créer le message WebSocket
 	wsMsg := WSMessage{

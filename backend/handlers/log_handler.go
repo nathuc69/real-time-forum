@@ -1,13 +1,13 @@
 package handlers
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"real-time-forum/backend/domain"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 var clientService domain.ClientService
@@ -42,12 +42,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bytes := make([]byte, 32)
-	if _, err := rand.Read(bytes); err != nil {
-		fmt.Println("❌ error generating token ")
-	}
-
-	sessionToken := base64.URLEncoding.EncodeToString(bytes)
+	sessionToken := uuid.New().String()
 	fmt.Println(sessionToken)
 
 	// SetCookie AVANT WriteHeader (important !)

@@ -116,15 +116,11 @@ func (r *MessageRepo) GetChatUsers(userID int64) ([]domain.ChatUser, error) {
 			COALESCE(lm.unread_count, 0) as unread_count
 		FROM users u
 		LEFT JOIN latest_messages lm ON u.id = lm.other_user_id AND lm.rn = 1
-		WHERE u.id != ? AND (lm.other_user_id IS NOT NULL OR u.id IN (
-			SELECT DISTINCT sender_id FROM messages WHERE receiver_id = ?
-			UNION
-			SELECT DISTINCT receiver_id FROM messages WHERE sender_id = ?
-		))
-		ORDER BY lm.last_message_at DESC, u.username ASC
+		WHERE u.id != ?
+		ORDER BY lm.last_message_at IS NULL, lm.last_message_at DESC, u.username ASC
 	`
 
-	rows, err := r.db.Query(query, userID, userID, userID, userID, userID, userID, userID)
+	rows, err := r.db.Query(query, userID, userID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("error querying chat users: %w", err)
 	}

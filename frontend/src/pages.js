@@ -446,6 +446,7 @@ export function renderChat(isLoggedIn, username) {
     }
 
     document.body.innerHTML = `
+        <div id="logoutOverlay"></div>
         <div id="chatPage" style="display: flex; height: 100vh; overflow: hidden;">
             <!-- Sidebar avec la liste des utilisateurs -->
             <div id="chatSidebar" style="width: 300px; background: #f5f5f5; border-right: 1px solid #ddd; display: flex; flex-direction: column;">
@@ -457,6 +458,9 @@ export function renderChat(isLoggedIn, username) {
                 <div style="padding: 10px;">
                     <button id="backToHomeBtn" style="width: 100%; padding: 10px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 10px;">
                         ← Back to Home
+                    </button>
+                    <button id="LogoutBtn" style="width: 100%; padding: 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Logout
                     </button>
                 </div>
 
@@ -499,7 +503,15 @@ export function renderChat(isLoggedIn, username) {
                 </div>
             </div>
         </div>
+        <div id="logoutPopup">
+            <h3>Are you sure you want to logout?</h3>
+            <button id="SubmitLogoutBtn">Yes, Logout</button>
+            <button id="cancelLogoutBtn">Cancel</button>
+        </div>
     `;
+
+    // Configurer les écouteurs d'événements (y compris pour le logout)
+    setupEventListeners();
 
     // Initialiser le WebSocket seulement s'il n'existe pas déjà
     let ws = window.wsClient;
@@ -515,6 +527,8 @@ export function renderChat(isLoggedIn, username) {
     let currentChatUsername = null;
     let messageOffset = 0;
     const messageLimit = 10;
+    let isFetchingMessages = false;
+    let hasMoreMessages = true;
 
     // Charger la liste des utilisateurs
     loadChatUsers();
@@ -551,9 +565,57 @@ export function renderChat(isLoggedIn, username) {
         }
     });
 
+    // Throttle function
+    function throttle(func, limit) {
+        let inThrottle;
+        return function () {
+            const args = arguments;
+            const context = this;
+            if (!inThrottle) {
+                func.apply(context, args);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        }
+    }
+
+    // Gestionnaire de scroll pour charger les messages précédents
+    document.getElementById('messagesContainer').addEventListener('scroll', throttle(function () {
+        const container = this;
+        if (container.scrollTop === 0 && !isFetchingMessages && hasMoreMessages && currentChatUserId) {
+            isFetchingMessages = true;
+            messageOffset += messageLimit;
+
+            fetch(`http://localhost:8086/api/chat/conversation?userId=${currentChatUserId}&limit=${messageLimit}&offset=${messageOffset}`, {
+                credentials: 'include'
+            })
+                .then(res => res.json())
+                .then(messages => {
+                    if (messages && messages.length > 0) {
+                        const prevScrollHeight = container.scrollHeight;
+                        // Les messages arrivent du plus ancien au plus récent de cette page (car inversés en backend)
+                        // Il faut les ajouter en haut dans le bon ordre
+                        messages.reverse().forEach(message => {
+                            prependMessageToUI(message);
+                        });
+                        container.scrollTop = container.scrollHeight - prevScrollHeight;
+                    }
+
+                    if (!messages || messages.length < messageLimit) {
+                        hasMoreMessages = false;
+                    }
+                    isFetchingMessages = false;
+                })
+                .catch(err => {
+                    console.error('Error loading older messages:', err);
+                    isFetchingMessages = false;
+                });
+        }
+    }, 200));
+
     // Fonction pour charger la liste des utilisateurs
     function loadChatUsers() {
-        fetch('http://localhost:8086/api/users', {
+        fetch('http://localhost:8086/api/chat/users', {
             credentials: 'include'
         })
             .then(res => res.json())
@@ -625,6 +687,8 @@ export function renderChat(isLoggedIn, username) {
         currentChatUserId = userId;
         currentChatUsername = username;
         messageOffset = 0;
+        hasMoreMessages = true;
+        isFetchingMessages = false;
 
         // Mettre à jour l'interface
         document.getElementById('chatHeader').style.display = 'block';
@@ -654,9 +718,14 @@ export function renderChat(isLoggedIn, username) {
                 const container = document.getElementById('messagesContainer');
                 container.innerHTML = '';
 
-                if (messages.length === 0) {
+                if (!messages || messages.length === 0) {
                     container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">No messages yet. Start the conversation!</div>';
+                    hasMoreMessages = false;
                     return;
+                }
+
+                if (messages.length < messageLimit) {
+                    hasMoreMessages = false;
                 }
 
                 messages.forEach(message => {
@@ -687,6 +756,7 @@ export function renderChat(isLoggedIn, username) {
 
         messageDiv.innerHTML = `
             <div style="max-width: 60%; padding: 10px 15px; border-radius: 18px; background: ${isSent ? '#4CAF50' : '#e0e0e0'}; color: ${isSent ? 'white' : '#333'};">
+                <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px; color: ${isSent ? '#e1f5fe' : '#555'};">${escapeHtml(message.senderUsername || (isSent ? username : currentChatUsername))}</div>
                 <p style="margin: 0; word-wrap: break-word;">${escapeHtml(message.content)}</p>
                 <span style="font-size: 0.75em; opacity: 0.8; margin-top: 5px; display: block;">
                     ${formatTime(message.createdAt)}
@@ -695,6 +765,38 @@ export function renderChat(isLoggedIn, username) {
         `;
 
         container.appendChild(messageDiv);
+    }
+
+    // Fonction pour ajouter un message en haut de l'UI
+    function prependMessageToUI(message) {
+        const container = document.getElementById('messagesContainer');
+        const currentUserId = getCurrentUserId();
+        const isSent = message.senderId === currentUserId;
+
+        const messageDiv = document.createElement('div');
+        messageDiv.className = isSent ? 'message sent' : 'message';
+        messageDiv.style.cssText = `
+            display: flex;
+            justify-content: ${isSent ? 'flex-end' : 'flex-start'};
+            margin-bottom: 15px;
+        `;
+
+        messageDiv.innerHTML = `
+            <div style="max-width: 60%; padding: 10px 15px; border-radius: 18px; background: ${isSent ? '#4CAF50' : '#e0e0e0'}; color: ${isSent ? 'white' : '#333'};">
+                <div style="font-weight: bold; font-size: 0.85em; margin-bottom: 4px; color: ${isSent ? '#e1f5fe' : '#555'};">${escapeHtml(message.senderUsername || (isSent ? username : currentChatUsername))}</div>
+                <p style="margin: 0; word-wrap: break-word;">${escapeHtml(message.content)}</p>
+                <span style="font-size: 0.75em; opacity: 0.8; margin-top: 5px; display: block;">
+                    ${formatTime(message.createdAt)}
+                </span>
+            </div>
+        `;
+
+        // Prepend it
+        if (container.firstChild) {
+            container.insertBefore(messageDiv, container.firstChild);
+        } else {
+            container.appendChild(messageDiv);
+        }
     }
 
     // Fonction pour envoyer un message

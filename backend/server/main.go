@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os"
 	"real-time-forum/backend/config"
 	"real-time-forum/backend/handlers"
 	"real-time-forum/backend/repositories"
@@ -11,16 +10,11 @@ import (
 	// "real-time-forum/backend/service"
 	"log"
 	"net/http"
-
-	"github.com/joho/godotenv"
 )
 
 func main() {
 
-	errEnv := godotenv.Load()
-	if errEnv != nil {
-		log.Fatal("❌ error loading .env file")
-	}
+	// Removed godotenv as it is not allowed by audit rules
 	db := config.InitDB()
 	defer db.Close()
 
@@ -40,7 +34,7 @@ func main() {
 	handlers.InitWebSocketHub(messageService)
 
 	router := handlers.Router(clientService, postsService, commentsService, messageService)
-	addr := os.Getenv("SERVER_PORT")
+	addr := ":8086" // fallback address or use os.Getenv("SERVER_PORT") if set manually
 	//router := SetupRouter(db)
 
 	////////////////////////////////////////////////////////////////////
