@@ -24,6 +24,9 @@ type Hub struct {
 	// Clients enregistrés indexés par leur ID utilisateur
 	Clients map[int64]*Client
 
+	// Utilisateurs actuellement en train de taper
+	Typing map[int64]TypingState
+
 	// Messages entrants des clients
 	Broadcast chan []byte
 
@@ -55,6 +58,19 @@ type ChatMessage struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+// TypingState représente l'état de frappe d'un utilisateur.
+type TypingState struct {
+	ReceiverID int64     `json:"receiverId"`
+	IsTyping   bool      `json:"isTyping"`
+	UpdatedAt  time.Time `json:"updatedAt"`
+}
+
+// TypingPayload représente le payload reçu depuis le frontend.
+type TypingPayload struct {
+	ReceiverID int64 `json:"receiverId"`
+	IsTyping   *bool `json:"isTyping,omitempty"`
+}
+
 // UserStatus représente le statut d'un utilisateur
 type UserStatus struct {
 	UserID   int64  `json:"userId"`
@@ -66,6 +82,7 @@ type UserStatus struct {
 func NewHub(messageService domain.MessageService) *Hub {
 	return &Hub{
 		Clients:        make(map[int64]*Client),
+		Typing:         make(map[int64]TypingState),
 		Broadcast:      make(chan []byte, 256),
 		Register:       make(chan *Client),
 		Unregister:     make(chan *Client),
@@ -90,6 +107,10 @@ func (h *Hub) Run() {
 		case client := <-h.Unregister:
 			h.mu.Lock()
 			if _, ok := h.Clients[client.ID]; ok {
+				typingState, wasTyping := h.Typing[client.ID]
+				if wasTyping {
+					delete(h.Typing, client.ID)
+				}
 				delete(h.Clients, client.ID)
 				close(client.Send)
 				h.mu.Unlock()
@@ -98,6 +119,9 @@ func (h *Hub) Run() {
 
 				// Notifier tous les autres clients que cet utilisateur est hors ligne
 				h.BroadcastUserStatus(client.ID, client.Username, false)
+				if wasTyping {
+					h.BroadcastTypingState(client.ID, client.Username, typingState.ReceiverID, false)
+				}
 			} else {
 				h.mu.Unlock()
 			}
@@ -167,6 +191,28 @@ func (h *Hub) BroadcastUserStatus(userID int64, username string, isOnline bool) 
 			log.Printf("⚠️ Send channel full for client %s, dropping status update", client.Username)
 		}
 	}
+}
+
+// BroadcastTypingState diffuse un état de frappe à un seul destinataire.
+func (h *Hub) BroadcastTypingState(senderID int64, username string, receiverID int64, isTyping bool) {
+	wsMsg := WSMessage{
+		Type: "typing",
+		Payload: map[string]interface{}{
+			"senderId":  senderID,
+			"username":   username,
+			"receiverId": receiverID,
+			"isTyping":   isTyping,
+		},
+		Timestamp: time.Now(),
+	}
+
+	data, err := json.Marshal(wsMsg)
+	if err != nil {
+		log.Printf("Error marshaling typing state: %v", err)
+		return
+	}
+
+	h.SendToUser(receiverID, data)
 }
 
 // GetOnlineUsers retourne la liste des utilisateurs en ligne
@@ -352,6 +398,12 @@ func (c *Client) HandleChatMessage(payload interface{}) {
 
 	// Envoyer une confirmation à l'expéditeur
 	c.Hub.SendToUser(chatMsg.SenderID, responseData)
+
+	// Arrêter l'indicateur de frappe côté destinataire une fois le message envoyé.
+	c.HandleTyping(TypingPayload{
+		ReceiverID: chatMsg.ReceiverID,
+		IsTyping:   boolPtr(false),
+	})
 }
 
 // HandleTyping traite un événement de frappe
@@ -361,25 +413,30 @@ func (c *Client) HandleTyping(payload interface{}) {
 		return
 	}
 
-	var typingData struct {
-		ReceiverID int64 `json:"receiverId"`
-	}
+	var typingData TypingPayload
 
 	if err := json.Unmarshal(data, &typingData); err != nil {
 		return
 	}
 
-	wsMsg := WSMessage{
-		Type: "typing",
-		Payload: map[string]interface{}{
-			"userId":   c.ID,
-			"username": c.Username,
-		},
-		Timestamp: time.Now(),
+	isTyping := true
+	if typingData.IsTyping != nil {
+		isTyping = *typingData.IsTyping
 	}
 
-	responseData, _ := json.Marshal(wsMsg)
-	c.Hub.SendToUser(typingData.ReceiverID, responseData)
+	c.Hub.mu.Lock()
+	if isTyping {
+		c.Hub.Typing[c.ID] = TypingState{
+			ReceiverID: typingData.ReceiverID,
+			IsTyping:   true,
+			UpdatedAt:  time.Now(),
+		}
+	} else {
+		delete(c.Hub.Typing, c.ID)
+	}
+	c.Hub.mu.Unlock()
+
+	c.Hub.BroadcastTypingState(c.ID, c.Username, typingData.ReceiverID, isTyping)
 }
 
 // HandleMarkRead marque les messages comme lus
@@ -401,4 +458,8 @@ func (c *Client) HandleMarkRead(payload interface{}) {
 	if err := c.Hub.MessageService.MarkAsRead(markReadData.SenderID, c.ID); err != nil {
 		log.Printf("Error marking messages as read: %v", err)
 	}
+}
+
+func boolPtr(value bool) *bool {
+	return &value
 }

@@ -104,6 +104,7 @@ class WebSocketClient {
 
 // Instance globale du client WebSocket
 let wsClient = null;
+let typingHideTimer = null;
 
 // Initialiser la connexion WebSocket
 function initWebSocket() {
@@ -161,8 +162,14 @@ function handleChatMessage(message) {
 
 function handleTyping(data) {
     console.log('User is typing:', data);
-    // Afficher l'indicateur de frappe
-    showTypingIndicator(data.userId, data.username);
+    if (!data) return;
+
+    if (data.isTyping === false) {
+        hideTypingIndicator();
+        return;
+    }
+
+    showTypingIndicator(data.senderId || data.userId, data.username);
 }
 
 // Fonctions utilitaires pour l'UI
@@ -214,16 +221,40 @@ function addMessageToConversation(message) {
 }
 
 function showTypingIndicator(userId, username) {
-    const typingIndicator = document.getElementById('typing-indicator');
+    const typingIndicator = getTypingIndicatorElement();
     if (!typingIndicator) return;
 
-    typingIndicator.textContent = `${username} is typing...`;
-    typingIndicator.style.display = 'block';
+    const typingName = typingIndicator.querySelector('.typing-indicator-name');
+    if (typingName) {
+        typingName.textContent = username;
+    } else {
+        typingIndicator.textContent = `${username} is typing...`;
+    }
 
-    // Masquer après 3 secondes
-    setTimeout(() => {
-        typingIndicator.style.display = 'none';
-    }, 3000);
+    typingIndicator.dataset.userId = String(userId || '');
+    typingIndicator.style.display = 'flex';
+    typingIndicator.classList.add('is-visible');
+
+    clearTimeout(typingHideTimer);
+
+    // Masquer automatiquement si aucun stop explicite n'arrive.
+    typingHideTimer = setTimeout(() => {
+        hideTypingIndicator();
+    }, 2500);
+}
+
+function hideTypingIndicator() {
+    const typingIndicator = getTypingIndicatorElement();
+    if (!typingIndicator) return;
+
+    clearTimeout(typingHideTimer);
+    typingHideTimer = null;
+    typingIndicator.classList.remove('is-visible');
+    typingIndicator.style.display = 'none';
+}
+
+function getTypingIndicatorElement() {
+    return document.getElementById('typingIndicator') || document.getElementById('typing-indicator');
 }
 
 // Fonctions d'envoi de messages
@@ -238,11 +269,12 @@ function sendChatMessage(receiverId, content) {
     });
 }
 
-function sendTypingIndicator(receiverId) {
+function sendTypingIndicator(receiverId, isTyping = true) {
     if (!wsClient) return;
 
     wsClient.send('typing', {
-        receiverId: receiverId
+        receiverId: receiverId,
+        isTyping: isTyping
     });
 }
 

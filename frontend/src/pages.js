@@ -489,8 +489,14 @@ export function renderChat(isLoggedIn, username) {
                     </div>
                 </div>
 
-                <div id="typingIndicator" style="padding: 10px 20px; color: #999; font-style: italic; display: none;">
-                    Someone is typing...
+                <div id="typingIndicator" aria-live="polite" style="padding: 10px 20px; color: #999; font-style: italic; display: none; align-items: center; gap: 10px;">
+                    <span class="typing-indicator-name"></span>
+                    <span class="typing-indicator-text">is typing</span>
+                    <span class="typing-indicator-dots" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </span>
                 </div>
 
                 <div id="messageInputContainer" style="padding: 20px; background: #f9f9f9; border-top: 1px solid #ddd; display: none;">
@@ -529,6 +535,9 @@ export function renderChat(isLoggedIn, username) {
     const messageLimit = 10;
     let isFetchingMessages = false;
     let hasMoreMessages = true;
+    let typingInProgress = false;
+    let typingStopTimer = null;
+    let typingHeartbeatTimer = null;
 
     // Charger la liste des utilisateurs
     loadChatUsers();
@@ -545,6 +554,7 @@ export function renderChat(isLoggedIn, username) {
 
     // Gestionnaire du bouton retour
     document.getElementById('backToHomeBtn').addEventListener('click', () => {
+        stopTypingSignal(true);
         if (window.wsClient) {
             window.wsClient.disconnect();
         }
@@ -553,15 +563,36 @@ export function renderChat(isLoggedIn, username) {
 
     // Gestionnaire d'envoi de message
     document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
-    document.getElementById('messageInput').addEventListener('keypress', (e) => {
+
+    const messageInput = document.getElementById('messageInput');
+    messageInput.addEventListener('input', () => {
+        if (!currentChatUserId) {
+            return;
+        }
+
+        if (!messageInput.value.trim()) {
+            stopTypingSignal();
+            return;
+        }
+
+        startTypingSignal();
+    });
+
+    messageInput.addEventListener('focus', () => {
+        if (currentChatUserId && messageInput.value.trim()) {
+            startTypingSignal();
+        }
+    });
+
+    messageInput.addEventListener('blur', () => {
+        stopTypingSignal();
+    });
+
+    messageInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            stopTypingSignal();
             sendMessage();
-        } else if (e.key !== 'Enter') {
-            // Envoyer l'indicateur de frappe
-            if (currentChatUserId) {
-                window.sendTypingIndicator(currentChatUserId);
-            }
         }
     });
 
@@ -684,6 +715,7 @@ export function renderChat(isLoggedIn, username) {
 
     // Fonction pour ouvrir une conversation
     function openChat(userId, username) {
+        stopTypingSignal(true);
         currentChatUserId = userId;
         currentChatUsername = username;
         messageOffset = 0;
@@ -694,6 +726,7 @@ export function renderChat(isLoggedIn, username) {
         document.getElementById('chatHeader').style.display = 'block';
         document.getElementById('messageInputContainer').style.display = 'block';
         document.getElementById('chatUsername').textContent = username;
+        hideTypingIndicator();
 
         // Charger la conversation
         loadConversation(userId);
@@ -806,8 +839,60 @@ export function renderChat(isLoggedIn, username) {
 
         if (!content || !currentChatUserId) return;
 
+        stopTypingSignal();
         window.sendChatMessage(currentChatUserId, content);
         input.value = '';
+    }
+
+    function startTypingSignal() {
+        if (!currentChatUserId || !window.sendTypingIndicator) {
+            return;
+        }
+
+        if (!typingInProgress) {
+            window.sendTypingIndicator(currentChatUserId, true);
+            typingInProgress = true;
+            typingHeartbeatTimer = setInterval(() => {
+                if (typingInProgress && currentChatUserId) {
+                    window.sendTypingIndicator(currentChatUserId, true);
+                }
+            }, 1200);
+        }
+
+        clearTimeout(typingStopTimer);
+        typingStopTimer = setTimeout(() => {
+            stopTypingSignal();
+        }, 1400);
+    }
+
+    function stopTypingSignal(force = false) {
+        clearTimeout(typingStopTimer);
+        typingStopTimer = null;
+
+        if (typingHeartbeatTimer) {
+            clearInterval(typingHeartbeatTimer);
+            typingHeartbeatTimer = null;
+        }
+
+        if ((typingInProgress || force) && currentChatUserId && window.sendTypingIndicator) {
+            window.sendTypingIndicator(currentChatUserId, false);
+        }
+
+        typingInProgress = false;
+    }
+
+    function hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (!typingIndicator) {
+            return;
+        }
+
+        const typingName = typingIndicator.querySelector('.typing-indicator-name');
+        if (typingName) {
+            typingName.textContent = '';
+        }
+
+        typingIndicator.style.display = 'none';
     }
 
     // Fonction pour obtenir l'ID de l'utilisateur actuel
@@ -842,6 +927,7 @@ export function renderChat(isLoggedIn, username) {
         if (window._chatHandlers) {
             ws.off('chat_message', window._chatHandlers.onMessage);
             ws.off('user_status', window._chatHandlers.onStatus);
+            ws.off('typing', window._chatHandlers.onTyping);
         }
 
         // Définir les handlers
@@ -849,6 +935,7 @@ export function renderChat(isLoggedIn, username) {
             // Si le message concerne la conversation actuelle, l'ajouter
             if (currentChatUserId &&
                 (message.senderId === currentChatUserId || message.receiverId === currentChatUserId)) {
+                stopTypingSignal();
                 addMessageToUI(message);
 
                 // Scroll vers le bas
@@ -890,14 +977,39 @@ export function renderChat(isLoggedIn, username) {
             }
         }
 
+        function handleTypingEvent(data) {
+            if (!currentChatUserId || !data || data.senderId !== currentChatUserId) {
+                return;
+            }
+
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (!typingIndicator) {
+                return;
+            }
+
+            const typingName = typingIndicator.querySelector('.typing-indicator-name');
+            if (typingName) {
+                typingName.textContent = data.username || currentChatUsername || 'Someone';
+            }
+
+            if (data.isTyping === false) {
+                typingIndicator.style.display = 'none';
+                return;
+            }
+
+            typingIndicator.style.display = 'flex';
+        }
+
         // Sauvegarder les références pour pouvoir les retirer au prochain appel de renderChat
         window._chatHandlers = {
             onMessage: handleChatMessageEvent,
-            onStatus: handleUserStatusEvent
+            onStatus: handleUserStatusEvent,
+            onTyping: handleTypingEvent
         };
 
         // Ajouter les nouveaux listeners
         ws.on('chat_message', handleChatMessageEvent);
         ws.on('user_status', handleUserStatusEvent);
+        ws.on('typing', handleTypingEvent);
     }
 }
